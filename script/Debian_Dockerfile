@@ -1,0 +1,15 @@
+FROM debian:latest
+
+RUN apt-get update && \
+    apt-get install -y init locales ssh && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    localedef -i zh_CN -c -f UTF-8 -A /usr/share/locale/locale.alias zh_CN.UTF-8
+
+RUN echo 'root:LBdj147369' | chpasswd
+
+ENV LANG zh_CN.UTF-8
+
+EXPOSE 22
+
+CMD ["/sbin/init"]
