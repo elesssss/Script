@@ -73,23 +73,23 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        app=( ["crontab"]="cron" ["netstat"]="net-tools" ["ip"]="iproute2" ["python3"]="python3")
+        apps=("cron" "net-tools" "iproute2" "python3")
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute" ["python3"]="python3")
+        apps=("cron" "net-tools" "iproute" "python3")
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute" ["python3"]="python3")
+        apps=("cronie" "net-tools" "iproute" "python3")
     elif [[ "$release" == "arch" ]]; then
         updates="pacman -Syu --noconfirm"
         installs="pacman -S --noconfirm"
-        app=( ["crontab"]="cronie" ["netstat"]="inetutils" ["ip"]="iproute2" ["python3"]="python3")
+        apps=("cronie" "inetutils" "iproute2" "python3")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add"
-        app=( ["crontab"]="dcron" ["netstat"]="net-tools" ["ip"]="iproute2" ["python3"]="python3")
+        apps=("dcron" "net-tools" "iproute2" "python3")
     fi
 }
 
@@ -98,10 +98,9 @@ install_base(){
     echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
     echo
     commands=("crontab" "netstat" "ip" "python3")
-    apps=("crontab" "netstat" "ip" "python3")
     install=()
     for i in ${!commands[@]}; do
-        [ ! $(command -v ${commands[i]}) ] && install+=(${app[${apps[i]}]})
+        [ ! $(command -v ${commands[i]}) ] && install+=(${apps[i]})
     done
     [ "${#install[@]}" -gt 0 ] && $updates && $installs ${install[@]}
 }
