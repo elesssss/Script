@@ -77,11 +77,11 @@ check_pmc(){
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute"])
+        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute")
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute"])
+        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute")
     elif [[ "$release" == "arch" ]]; then
         updates="pacman -Syu --noconfirm"
         installs="pacman -S --noconfirm"
