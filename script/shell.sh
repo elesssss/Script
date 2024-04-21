@@ -77,15 +77,15 @@ check_pmc(){
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute")
+        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute" ["python3"]="python3")
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute")
+        app=( ["crontab"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute" ["python3"]="python3")
     elif [[ "$release" == "arch" ]]; then
         updates="pacman -Syu --noconfirm"
         installs="pacman -S --noconfirm"
-        app=( ["crontab"]="cronie" ["netstat"]="inetutils" ["ip"]="iproute2")
+        app=( ["crontab"]="cronie" ["netstat"]="inetutils" ["ip"]="iproute2" ["python3"]="python3")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add"
@@ -104,7 +104,7 @@ install_base(){
     for i in ${!commands[@]}; do
         [ ! $(command -v ${commands[i]}) ] && install+=(${app[${apps[i]}]})
     done
-    [ "${#install[@]}" -gt 0 ] && $updates && $installs ${install[@]}
+    [ "${#install[@]}" -gt 0 ] && $installs ${install[@]}
 }
 
 check_root
