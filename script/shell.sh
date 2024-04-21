@@ -15,7 +15,7 @@ Tip="${Yellow}[提示]${Nc}"
 
 check_root(){
     if [ "$(id -u)" != "0" ]; then
-        echo -e "${Error}请执行 ${Green}sudo -i${Nc} 后以${Green}root${Nc}权限执行此脚本！"
+        echo -e " ${Error} 请使用${Red} CentOS 8${Nc} 或更高版本" && exit 1
         exit 1
     fi
 }
