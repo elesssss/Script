@@ -93,7 +93,6 @@ check_pmc(){
     fi
 }
 
-
 install_base(){
     check_pmc
     echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
@@ -104,7 +103,7 @@ install_base(){
     for i in ${!commands[@]}; do
         [ ! $(command -v ${commands[i]}) ] && install+=(${app[${apps[i]}]})
     done
-    [ "${#install[@]}" -gt 0 ] && $installs ${install[@]}
+    [ "${#install[@]}" -gt 0 ] && $updates && $installs ${install[@]}
 }
 
 check_root
