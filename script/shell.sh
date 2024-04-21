@@ -33,7 +33,9 @@ check_release(){
     if [[ "${release}" == "kali" ]]; then
         echo
     elif [[ "${release}" == "centos" ]]; then
-        echo
+        if [[ ${os_version} -lt 8 ]]; then
+            echo -e " ${Error} 请使用 CentOS 8 或更高版本" && exit 1
+        fi
     elif [[ "${release}" == "ubuntu" ]]; then
         echo
     elif [[ "${release}" == "fedora" ]]; then
