@@ -97,7 +97,7 @@ check_pmc(){
 install_base(){
     check_pmc
     echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
-    
+    echo
     commands=("crontab" "netstat" "ip" "python3")
     apps=("cron" "netstat" "ip" "python3")
     install=()
