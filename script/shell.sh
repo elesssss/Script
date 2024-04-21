@@ -74,7 +74,7 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        app=( ["cron"]="cron" ["netstat"]="net-tools" ["ip"]="iproute2" ["docker"]="docker.io")
+        app=( ["cron"]="cron" ["netstat"]="net-tools" ["ip"]="iproute2" ["python3"]="python3")
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
@@ -88,9 +88,9 @@ check_pmc(){
         installs="pacman -S --noconfirm"
         app=( ["cron"]="cronie" ["netstat"]="inetutils" ["ip"]="iproute2")
     elif [[ "$release" == "alpine" ]]; then
-        updates="apk update -q"
-        installs="apk add -q"
-        app=( ["cron"]="dcron" ["netstat"]="net-tools" ["ip"]="iproute2")
+        updates="apk update"
+        installs="apk add"
+        app=( ["cron"]="dcron" ["netstat"]="net-tools" ["ip"]="iproute2" ["python3"]="python3")
     fi
 }
 
@@ -98,8 +98,8 @@ check_pmc(){
 install_base(){
     check_pmc
     echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
-    commands=("cron" "netstat" "ip" "docker")
-    apps=("cron" "netstat" "ip" "docker")
+    commands=("cron" "netstat" "ip" "python3")
+    apps=("cron" "netstat" "ip" "python3")
     install=()
     for i in ${!commands[@]}; do
         [ ! $(command -v ${commands[i]}) ] && install+=(${app[${apps[i]}]})
