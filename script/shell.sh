@@ -30,7 +30,6 @@ check_release(){
     fi
     os_version=$(echo $VERSION_ID | cut -d. -f1,2)
 
-
     if [[ "${release}" == "arch" ]]; then
         echo
     elif [[ "${release}" == "kali" ]]; then
