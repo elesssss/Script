@@ -24,90 +24,88 @@ check_release(){
     if [[ -e /etc/os-release ]]; then
         . /etc/os-release
         release=$ID
+        os_version=$VERSION_ID
     elif [[ -e /usr/lib/os-release ]]; then
         . /usr/lib/os-release
         release=$ID
+        os_version=$VERSION_ID
     fi
 
-    os_version=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
 
     if [[ "${release}" == "arch" ]]; then
-        echo ""
+        echo
     elif [[ "${release}" == "kali" ]]; then
-        echo ""
+        echo
     elif [[ "${release}" == "centos" ]]; then
-        if [[ ${os_version} -lt 7 ]]; then
-            echo -e "${Error} 请使用 CentOS 7 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "ubuntu" ]]; then
-        if [[ ${os_version} -lt 20 ]]; then
-            echo -e "${Error} 请使用 Ubuntu 20.04 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "fedora" ]]; then
-        if [[ ${os_version} -lt 36 ]]; then
-            echo -e "${Error} 请使用 Fedora 36 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "debian" ]]; then
-        if [[ ${os_version} -lt 10 ]]; then
-            echo -e "${Error} 请使用 Debian 10 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "almalinux" ]]; then
-        if [[ ${os_version} -lt 9 ]]; then
-            echo -e "${Error} 请使用 AlmaLinux 9 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "rocky" ]]; then
-        if [[ ${os_version} -lt 9 ]]; then
-            echo -e "${Error} 请使用 Rocky Linux 9 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "oracle" ]]; then
-        if [[ ${os_version} -lt 8 ]]; then
-            echo -e "${Error} 请使用 Oracle Linux 8 或更高版本！" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "alpine" ]]; then
-        if [[ ${os_version} -lt 3.8 ]]; then
-            echo -e "${Error} 请使用 Alpine Linux 3.8 或更高版本！" && exit 1
-        fi
+        echo
     else
         echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
-        echo "${Info} 请确保您使用的是以下支持的操作系统之一："
-        echo "- Ubuntu 20.04+"
-        echo "- Debian 10+"
-        echo "- CentOS 7+"
-        echo "- Fedora 36+"
-        echo "- Arch Linux"
-        echo "- Kali"
-        echo "- AlmaLinux 9+"
-        echo "- Rocky Linux 9+"
-        echo "- Oracle Linux 8+"
-        echo "- Alpine Linux 3.8"
+        echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
+        echo -e "-${Red} Ubuntu${Nc} "
+        echo -e "-${Red} Debian ${Nc}"
+        echo -e "-${Red} CentOS ${Nc}"
+        echo -e "-${Red} Fedora ${Nc}"
+        echo -e "-${Red} Arch Linux ${Nc}"
+        echo -e "-${Red} Kali ${Nc}"
+        echo -e "-${Red} AlmaLinux ${Nc}"
+        echo -e "-${Red} Rocky Linux ${Nc}"
+        echo -e "-${Red} Oracle Linux ${Nc}"
+        echo -e "-${Red} Alpine Linux ${Nc}"
         exit 1
     fi
 }
 
-install_base(){
+check_pmc(){
     check_release
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
-        update="apt update -y"
-        install="apt install -y"
+        updates="apt update -y"
+        installs="apt install -y"
+        app=( ["cron"]="cron" ["netstat"]="net-tools" ["ip"]="iproute2" ["docker"]="docker.io")
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
-        update="dnf update -y"
-        install="dnf install -y"
+        updates="dnf update -y"
+        installs="dnf install -y"
+        app=( ["cron"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute"])
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
-        update="yum update -y"
-        install="yum install -y"
+        updates="yum update -y"
+        installs="yum install -y"
+        app=( ["cron"]="cronie" ["netstat"]="net-tools" ["ip"]="iproute"])
     elif [[ "$release" == "arch" ]]; then
-        update="pacman -Syu --noconfirm"
-        install="pacman -S --noconfirm"
+        updates="pacman -Syu --noconfirm"
+        installs="pacman -S --noconfirm"
+        app=( ["cron"]="cronie" ["netstat"]="inetutils" ["ip"]="iproute2")
     elif [[ "$release" == "alpine" ]]; then
-        update="apk update -q"
-        install="apk add -q"
+        updates="apk update -q"
+        installs="apk add -q"
+        app=( ["cron"]="dcron" ["netstat"]="net-tools" ["ip"]="iproute2")
     fi
+}
 
-    commands=("netstat")
-    apps=("net-tools")
+
+install_base(){
+    check_pmc
+    echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
+    commands=("cron" "netstat" "ip" "docker")
+    apps=("cron" "netstat" "ip" "docker")
     install=()
     for i in ${!commands[@]}; do
-        [ ! $(command -v ${commands[i]}) ] && install+=(${apps[i]})
+        [ ! $(command -v ${commands[i]}) ] && install+=(${app[${apps[i]}]})
     done
-    [ "${#install[@]}" -gt 0 ] && $update && $install ${install[@]}
+    [ "${#install[@]}" -gt 0 ] && $updates && $installs ${install[@]}
 }
+
+check_root
+install_base
