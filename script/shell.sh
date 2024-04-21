@@ -106,4 +106,4 @@ install_base(){
 }
 
 check_root
-install_bas
+install_base
