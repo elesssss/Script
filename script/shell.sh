@@ -30,9 +30,7 @@ check_release(){
     fi
     os_version=$(echo $VERSION_ID | cut -d. -f1,2)
 
-    if [[ "${release}" == "arch" ]]; then
-        echo
-    elif [[ "${release}" == "kali" ]]; then
+    if [[ "${release}" == "kali" ]]; then
         echo
     elif [[ "${release}" == "centos" ]]; then
         echo
@@ -57,7 +55,6 @@ check_release(){
         echo -e "-${Red} Debian ${Nc}"
         echo -e "-${Red} CentOS ${Nc}"
         echo -e "-${Red} Fedora ${Nc}"
-        echo -e "-${Red} Arch Linux ${Nc}"
         echo -e "-${Red} Kali ${Nc}"
         echo -e "-${Red} AlmaLinux ${Nc}"
         echo -e "-${Red} Rocky Linux ${Nc}"
@@ -66,20 +63,22 @@ check_release(){
         exit 1
     fi
 }
-
 check_pmc(){
     check_release
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
+        check_install="dpkg -s"
         apps=("cron" "net-tools" "iproute2" "python3")
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
+        check_install="dnf list installed"
         apps=("cron" "net-tools" "iproute" "python3")
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
         updates="yum update -y"
         installs="yum install -y"
+        check_install="rpm -q"
         apps=("cronie" "net-tools" "iproute" "python3")
     elif [[ "$release" == "arch" ]]; then
         updates="pacman -Syu --noconfirm"
@@ -88,20 +87,24 @@ check_pmc(){
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add"
+        check_install="apk info -e"
         apps=("dcron" "net-tools" "iproute2" "python3")
     fi
 }
 
 install_base(){
     check_pmc
-    echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
+    echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
-    commands=("crontab" "netstat" "ip" "python3")
-    install=()
-    for i in ${!commands[@]}; do
-        [ ! $(command -v ${commands[i]}) ] && install+=(${apps[i]})
+    for i in "${apps[@]}"
+    do
+        if ! $check_install $i &> /dev/null
+        then
+            echo -e "${Tip} $i 未安装。正在安装..."
+            $updates
+            $installs $i
+        fi
     done
-    [ "${#install[@]}" -gt 0 ] && $updates && $installs ${install[@]}
 }
 
 check_root
