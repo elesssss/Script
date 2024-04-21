@@ -80,10 +80,6 @@ check_pmc(){
         installs="yum install -y"
         check_install="rpm -q"
         apps=("cronie" "net-tools" "iproute" "python3")
-    elif [[ "$release" == "arch" ]]; then
-        updates="pacman -Syu --noconfirm"
-        installs="pacman -S --noconfirm"
-        apps=("cronie" "inetutils" "iproute2" "python3")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add"
