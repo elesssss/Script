@@ -81,7 +81,7 @@ check_pmc(){
         updates="yum update -y"
         installs="yum install -y"
         check_install="rpm -q"
-        apps=("cronie" "net-tools" "iproute" "python38")
+        apps=("cronie" "net-tools" "iproute" "python3.11")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add"
