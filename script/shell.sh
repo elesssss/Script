@@ -24,12 +24,11 @@ check_release(){
     if [[ -e /etc/os-release ]]; then
         . /etc/os-release
         release=$ID
-        os_version=$VERSION_ID
     elif [[ -e /usr/lib/os-release ]]; then
         . /usr/lib/os-release
         release=$ID
-        os_version=$VERSION_ID
     fi
+    os_version=$(echo $VERSION_ID | cut -d. -f1,2)
 
 
     if [[ "${release}" == "arch" ]]; then
@@ -98,7 +97,7 @@ check_pmc(){
 install_base(){
     check_pmc
     echo -e "${Info}你的系统是${Red} $release $os_version ${Nc}"
-    commands=("cron" "netstat" "ip" "python3")
+    commands=("crontab" "netstat" "ip" "python3")
     apps=("cron" "netstat" "ip" "python3")
     install=()
     for i in ${!commands[@]}; do
