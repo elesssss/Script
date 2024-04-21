@@ -74,7 +74,7 @@ check_pmc(){
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("cron" "net-tools" "iproute" "python3")
+        apps=("cronie" "net-tools" "iproute" "python3")
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
         updates="yum update -y"
         installs="yum install -y"
