@@ -124,19 +124,20 @@ get_public_ip(){
 }
 
 true_bbr() {
-    SETTING1="net.core.default_qdisc=fq"
-    SETTING2="net.ipv4.tcp_congestion_control=bbr"
+    setbbr1="net.core.default_qdisc=fq"
+    setbbr2="net.ipv4.tcp_congestion_control=bbr"
 
-    for SETTING in "$SETTING1" "$SETTING2"; do
-        if grep -qE "^\s*${SETTING%=*}\s*=" /etc/sysctl.conf; then
-            sed -i "s|^\s*${SETTING%=*}\s*=.*|${SETTING}|g" /etc/sysctl.conf
+    for setbbr in "$setbbr1" "$setbbr2"; do
+        if grep -qE "^\s*${setbbr%=*}\s*=" /etc/sysctl.conf; then
+            sed -i "s|^\s*${setbbr%=*}\s*=.*|${setbbr}|g" /etc/sysctl.conf
         else
-            echo "$SETTING" >> /etc/sysctl.conf
+            echo "$setbbr" >> /etc/sysctl.conf
         fi
     done
 
     sysctl -p >/dev/null 2>&1
     echo -e "${Info} bbr 控制网络拥堵算法已${Green}开启${Nc}。"
+    echo
 }
 
 restart_ssh(){
