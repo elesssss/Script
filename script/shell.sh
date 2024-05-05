@@ -89,8 +89,8 @@ check_pmc(){
 
 install_base(){
     check_pmc
-    echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     cmds=("crontab" "netstat" "ip" "python3" "xxd")
+    echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     for g in "${!cmds[@]}"; do
         if [ ! $(type -p ${cmds[g]}) ]; then
             CMDS+=(${cmds[g]})
