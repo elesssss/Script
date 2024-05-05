@@ -65,44 +65,46 @@ check_release(){
         exit 1
     fi
 }
+
 check_pmc(){
     check_release
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        check_install="dpkg -s"
-        apps=("cron" "net-tools" "iproute2" "python3")
+        apps=("cron" "net-tools" "iproute2" "python3" "xxd")
     elif [[ "$release" == "almalinux" || "$release" == "fedora" || "$release" == "rocky" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        check_install="dnf list installed"
-        apps=("cronie" "net-tools" "iproute" "python3.11")
+        apps=("cronie" "net-tools" "iproute" "python3.11" "xxd")
     elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        check_install="yum list installed"
-        apps=("cronie" "net-tools" "iproute" "python3.11")
+        apps=("cronie" "net-tools" "iproute" "python3.11" "vim-common")
     elif [[ "$release" == "alpine" ]]; then
-        updates="apk update"
-        installs="apk add"
-        check_install="apk info -e"
-        apps=("dcron" "net-tools" "iproute2" "python3")
+        updates="apk update -f"
+        installs="apk add -f"
+        apps=("dcron" "net-tools" "iproute2" "python3" "xxd")
     fi
 }
 
 install_base(){
     check_pmc
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
-    echo
-    for i in "${apps[@]}"
-    do
-        if ! $check_install $i &> /dev/null
-        then
-            echo -e "${Tip} $i 未安装。正在安装..."
-            $updates
-            $installs $i
+    cmds=("crontab" "netstat" "ip" "python3" "xxd")
+    for g in "${!cmds[@]}"; do
+        if [ ! $(type -p ${cmds[g]}) ]; then
+            CMDS+=(${cmds[g]})
+            DEPS+=(${apps[g]})
         fi
     done
+
+    if [ "${#DEPS[@]}" -ge 1 ]; then
+        echo -e "${Info} 安装依赖列表：${Green}${CMDS[@]}${Nc}"
+        $updates
+        $installs ${DEPS[@]}
+    else
+        echo -e "${Info} 所有依赖已存在，不需要额外安装。"
+    fi
 }
 
 check_root
