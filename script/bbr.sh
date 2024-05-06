@@ -99,7 +99,6 @@ install_base(){
         echo -e "${Info} 安装依赖列表：${Green}${CMDS[@]}${Nc}"
         $updates >/dev/null 2>&1
         $installs ${DEPS[@]} >/dev/null 2>&1
-    else
     fi
 }
 
