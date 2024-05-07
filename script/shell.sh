@@ -13,6 +13,13 @@ Info="${Green}[信息]${Nc}"
 Error="${Red}[错误]${Nc}"
 Tip="${Yellow}[提示]${Nc}"
 
+mtproxy_dir="/var/MTProxy"
+mtproxy_file="${mtproxy_dir}/mtproxy.py"
+mtproxy_conf="${mtproxy_dir}/config.py"
+mtproxy_ini="${mtproxy_dir}/config.ini"
+mtproxy_log="${mtproxy_dir}/log_mtproxy.log"
+
+
 # 检查是否为root用户
 check_root(){
     if [ "$(id -u)" != "0" ]; then
@@ -34,34 +41,28 @@ check_release(){
     if [[ "${release}" == "kali" ]]; then
         echo
     elif [[ "${release}" == "centos" ]]; then
-        if [[ ${os_version} -lt 8 ]]; then
-            echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
-            echo -e "${Error} 请使用${Red} $release 8${Nc} 或更高版本" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "ubuntu" ]]; then
         echo
     elif [[ "${release}" == "fedora" ]]; then
-        if [[ ${os_version} -lt 30 ]]; then
-            echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
-            echo -e "${Error} 请使用${Red} $release 30${Nc} 或更高版本" && exit 1
-        fi
+        echo
     elif [[ "${release}" == "debian" ]]; then
         echo
     elif [[ "${release}" == "almalinux" ]]; then
         echo
     elif [[ "${release}" == "rocky" ]]; then
         echo
-    elif [[ "${release}" == "oracle" ]]; then
-        echo
+    elif [[ "${release}" == "ol" ]]; then
+        release=oracle
     elif [[ "${release}" == "alpine" ]]; then
         echo
     else
         echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
         echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
-        echo -e "-${Red} Ubuntu${Nc} "
+        echo -e "-${Red} Ubuntu ${Nc} "
         echo -e "-${Red} Debian ${Nc}"
         echo -e "-${Red} CentOS 8+ ${Nc}"
-        echo -e "-${Red} Fedora 30+${Nc}"
+        echo -e "-${Red} Fedora 25+ ${Nc}"
         echo -e "-${Red} Kali ${Nc}"
         echo -e "-${Red} AlmaLinux ${Nc}"
         echo -e "-${Red} Rocky Linux ${Nc}"
@@ -77,33 +78,33 @@ check_pmc(){
         updates="apt update -y"
         installs="apt install -y"
         check_install="dpkg -s"
-        apps=("python3" "python3-cryptography" "xxd" "procps" "iproute2")
+        apps=("openssl" "python3" "xxd" "procps" "iproute2")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
         check_install="apk info -e"
-        apps=("python3" "py3-cryptography" "xxd" "procps" "iproute2")
-    elif [[ "$release" == "almalinux" || "$release" == "rocky" ]]; then
+        apps=("openssl" "python3" "py3-cryptography" "xxd" "procps" "iproute2")
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("python3.11" "python3.11-cryptography" "vim-common" "procps-ng" "iproute")
-    elif [[ "$release" == "centos" || "$release" == "oracle" ]]; then
+        apps=("openssl" "python3.11" "vim-common" "procps-ng" "iproute")
+    elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
         check_install="yum list installed"
-        apps=("python3.11" "python3.11-cryptography" "vim-common" "procps-ng" "iproute")
+        apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("python3" "python3-cryptography" "vim-common" "procps-ng" "iproute")
+        apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("python3" "cryptography" "xxd" "ps" "ip")
+    cmds=("openssl" "python3" "cryptography" "xxd" "ps" "ip")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
     DEPS=()
@@ -122,7 +123,7 @@ install_base(){
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
 
-    if [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "centos" || "$release" == "oracle" ]]; then
+    if [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         ln -sf /usr/bin/python3.11 /usr/bin/python3
     fi
 }
