@@ -13,9 +13,10 @@ Info="${Green}[信息]${Nc}"
 Error="${Red}[错误]${Nc}"
 Tip="${Yellow}[提示]${Nc}"
 
+# 检查是否为root用户
 check_root(){
     if [ "$(id -u)" != "0" ]; then
-        echo -e "${Error}请执行 ${Green}sudo -i${Nc} 后以${Green}root${Nc}权限执行此脚本！"
+        echo -e "${Error} 当前非ROOT账号(或没有ROOT权限)，无法继续操作，请更换ROOT账号或使用 ${Green_globa}sudo -i${Nc} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。"
         exit 1
     fi
 }
@@ -70,33 +71,33 @@ check_pmc(){
         updates="apt update -y"
         installs="apt install -y"
         check_install="dpkg -s"
-        apps=("net-tools")
+        apps=("net-tools" "iproute2")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
         check_install="apk info -e"
-        apps=("net-tools")
+        apps=("net-tools" "iproute2")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("net-tools")
+        apps=("net-tools" "iproute")
     elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
         check_install="yum list installed"
-        apps=("net-tools")
+        apps=("net-tools" "iproute")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("net-tools")
+        apps=("net-tools" "iproute")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("netstat")
+    cmds=("netstat" "ip")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
 
