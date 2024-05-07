@@ -148,7 +148,7 @@ true_bbr() {
     done
 
     sysctl -p >/dev/null 2>&1
-    echo -e "${Info} bbr 控制网络拥堵算法已${Green}开启${Nc}。"
+    echo -e "${Info} bbr 控制网络拥堵算法已 ${Green}开启${Nc}。"
     echo
 }
 
