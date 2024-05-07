@@ -13,13 +13,6 @@ Info="${Green}[信息]${Nc}"
 Error="${Red}[错误]${Nc}"
 Tip="${Yellow}[提示]${Nc}"
 
-mtproxy_dir="/var/MTProxy"
-mtproxy_file="${mtproxy_dir}/mtproxy.py"
-mtproxy_conf="${mtproxy_dir}/config.py"
-mtproxy_ini="${mtproxy_dir}/config.ini"
-mtproxy_log="${mtproxy_dir}/log_mtproxy.log"
-
-
 # 检查是否为root用户
 check_root(){
     if [ "$(id -u)" != "0" ]; then
