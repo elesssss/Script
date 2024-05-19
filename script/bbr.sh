@@ -91,7 +91,7 @@ check_pmc(){
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("net-tools"")
+        apps=("net-tools")
     fi
 }
 
