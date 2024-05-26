@@ -35,3 +35,7 @@ WantedBy=multi-user.target
 ```
 systemctl enable --now rc-local
 ```
+最后执行
+```
+systemctl restart networking && reboot
+```
