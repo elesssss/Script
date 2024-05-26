@@ -19,7 +19,11 @@ chmod +x /etc/rc.local
 ```
 
 启用 rc-local 服务:
-如果 rc-local 服务未启用，创建一个服务文件 /etc/systemd/system/rc-local.service：
+如果 rc-local 服务未启用，创建一个服务文件 
+```
+vim /etc/systemd/system/rc-local.service：
+```
+
 ```
 [Unit]
 Description=/etc/rc.local Compatibility
