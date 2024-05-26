@@ -9,9 +9,8 @@ chmod +x /etc/rc.local
 在文件中添加命令:
 ```
 #!/bin/bash
-echo "Running initialization commands"
-apt update && apt upgrade -y
-echo "Initialization complete"
+cp -f /etc/network/interfaces.bak
+systemctl restart networking
 exit 0
 ```
 启用 rc-local 服务:
@@ -34,6 +33,5 @@ WantedBy=multi-user.target
 ```
 启用并启动 rc-local 服务：
 ```
-systemctl enable rc-local
-systemctl start rc-local
+systemctl enable --now rc-local
 ```
