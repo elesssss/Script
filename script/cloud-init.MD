@@ -35,7 +35,7 @@ WantedBy=multi-user.target
 ```
 启用并启动 rc-local 服务：
 ```
-systemctl enable --now rc-local
+systemctl enable rc-local
 ```
 最后执行
 ```
