@@ -9,7 +9,7 @@ chmod +x /etc/rc.local
 在文件中添加命令:
 ```
 #!/bin/bash
-cp -f /etc/network/interfaces.bak
+cp -f /etc/network/interfaces.bak /etc/network/interfaces
 systemctl restart networking
 exit 0
 ```
