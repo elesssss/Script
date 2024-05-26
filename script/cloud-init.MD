@@ -44,5 +44,5 @@ systemctl enable rc-local
 
 最后执行
 ```
-systemctl restart networking && reboot
+systemctl restart networking && shutdown -r +1
 ```
