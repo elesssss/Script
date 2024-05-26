@@ -4,7 +4,6 @@
 
 ```
 vim /etc/rc.local
-chmod +x /etc/rc.local
 ```
 在文件中添加命令:
 ```
@@ -12,6 +11,9 @@ chmod +x /etc/rc.local
 cp -f /etc/network/interfaces.bak /etc/network/interfaces
 systemctl restart networking
 exit 0
+```
+```
+chmod +x /etc/rc.local
 ```
 启用 rc-local 服务:
 如果 rc-local 服务未启用，创建一个服务文件 /etc/systemd/system/rc-local.service：
