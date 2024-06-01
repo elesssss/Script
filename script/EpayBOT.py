@@ -1,5 +1,5 @@
-# # 首次运行脚本前请执行 [pip3 install sqlalchemy requests pymysql] 或者 [apt install -y python3-sqlalchemy python3-requests python3-pymysql]
-
+# 首次运行脚本前请执行 [pip3 install sqlalchemy requests pymysql] 或者 [apt install -y python3-sqlalchemy python3-requests python3-pymysql]
+# 需要 sqlalchemy >= 1.4.46
 import requests
 from sqlalchemy import create_engine, MetaData, Table, select
 from sqlalchemy.sql import desc
