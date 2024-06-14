@@ -130,7 +130,7 @@ get_public_ip(){
     done
 }
 
-true_bbr() {
+enable_bbr() {
     setbbr1="net.core.default_qdisc=fq"
     setbbr2="net.ipv4.tcp_congestion_control=bbr"
 
@@ -186,7 +186,7 @@ main(){
     check_root
     install_base
     set_ssh
-    true_bbr
+    enable_bbr
 }
 
 main
