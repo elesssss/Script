@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 Red="\033[31m" # 红色
@@ -49,11 +50,12 @@ add_swap(){
         echo -e "${Tip} Swapfile 未发现，正在为其创建 swapfile..."
         echo -e "${Tip} 请输入需要添加的 swap，建议为内存的2倍！"
         read -p "swap 数值:" swapsize
-        dd if=/dev/zero of=/etc/swap bs=1M count=${swapsize}
-        echo "/etc/swap none swap sw 0 0" | sudo tee -a /etc/fstab
+        fallocate -l ${swapsize}M /etc/swap
         chmod 600 /etc/swap
         mkswap /etc/swap
         swapon /etc/swap
+        grep -qF "/etc/swap none swap sw 0 0" /etc/fstab || echo "/etc/swap none swap sw 0 0" | sudo tee -a /etc/fstab
+        swapon --show
         echo -e "${Info} swap 开启成功！虚拟内存大小 ${Green}${swapsize}MB${Nc}"
         echo
     else
@@ -68,8 +70,9 @@ del_swap(){
         echo -e "${Error} Swapfile 未发现，不存在swap分区！"
         echo
     else
-        swapoff ${swapfile}
-        rm -f ${swapfile}
+        swapoff ${swapfile}  -a
+        rm -rf ${swapfile}
+        sudo sed -i '/\/etc\/swap none swap sw 0 0/d' /etc/fstab
         echo -e "${Info} swap 已删除！"
         echo
     fi
