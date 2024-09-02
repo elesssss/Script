@@ -54,7 +54,7 @@ add_swap(){
         chmod 600 /etc/swap
         mkswap /etc/swap
         swapon /etc/swap
-        grep -qF "/etc/swap none swap sw 0 0" /etc/fstab || echo "/etc/swap none swap sw 0 0" | sudo tee -a /etc/fstab
+        grep -qF "/etc/swap none swap sw 0 0" /etc/fstab || echo "/etc/swap none swap sw 0 0" | tee -a /etc/fstab
         swapon --show
         echo -e "${Info} swap 开启成功！虚拟内存大小 ${Green}${swapsize}MB${Nc}"
         echo
@@ -72,7 +72,7 @@ del_swap(){
     else
         swapoff ${swapfile}  -a
         rm -rf ${swapfile}
-        sudo sed -i '/\/etc\/swap none swap sw 0 0/d' /etc/fstab
+        sed -i '/\/etc\/swap none swap sw 0 0/d' /etc/fstab
         echo -e "${Info} swap 已删除！"
         echo
     fi
