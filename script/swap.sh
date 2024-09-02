@@ -50,6 +50,7 @@ add_swap(){
         echo -e "${Tip} 请输入需要添加的 swap，建议为内存的2倍！"
         read -p "swap 数值:" swapsize
         dd if=/dev/zero of=/etc/swap bs=1M count=${swapsize}
+        echo "/etc/swap none swap sw 0 0" | sudo tee -a /etc/fstab
         chmod 600 /etc/swap
         mkswap /etc/swap
         swapon /etc/swap
