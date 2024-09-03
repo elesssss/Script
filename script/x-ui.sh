@@ -176,7 +176,7 @@ reset_config() {
         return 0
     fi
     /usr/local/x-ui/x-ui setting -reset
-    echo -e "所有面板设置已重置为默认值，现在请重启面板，并使用默认的 ${green}54321${plain} 端口访问面板"
+    echo -e "所有面板设置已重置为默认值，现在请重启面板，并使用默认的 ${green}2053${plain} 端口访问面板"
     confirm_restart
 }
 
