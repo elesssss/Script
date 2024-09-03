@@ -151,9 +151,7 @@ uninstall() {
     echo -e "x-ui 卸载成功"
     echo ""
 
-    if [[ $# == 0 ]]; then
-        before_show_menu
-    fi
+    exit
 }
 
 reset_user() {
