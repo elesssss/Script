@@ -145,9 +145,10 @@ uninstall() {
     systemctl reset-failed
     rm /etc/x-ui/ -rf
     rm /usr/local/x-ui/ -rf
+    rm /usr/bin/x-ui -f
 
     echo ""
-    echo -e "卸载成功，如果你想删除此脚本，则退出脚本后运行 ${green}rm /usr/bin/x-ui -f${plain} 进行删除"
+    echo -e "x-ui 卸载成功"
     echo ""
 
     if [[ $# == 0 ]]; then
