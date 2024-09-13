@@ -25,9 +25,9 @@ convert_bytes() {
 # 统计入站流量
 rx_total=$(ifconfig | grep "RX packets" | awk '{print $5}' | awk '{ sum += $1 } END { printf "%.0f", sum }')
 rx_converted=$(convert_bytes $rx_total)
-echo -e "${YELLOW}已接收：${NC}${GREEN}$rx_converted${NC}"
+echo -e "${YELLOW}入站流量：${NC}${GREEN}$rx_converted${NC}"
 
 # 统计出站流量
 tx_total=$(ifconfig | grep "TX packets" | awk '{print $5}' | awk '{ sum += $1 } END { printf "%.0f", sum }')
 tx_converted=$(convert_bytes $tx_total)
-echo -e "${YELLOW}已发送: ${NC}${GREEN}$tx_converted${NC}"
+echo -e "${YELLOW}出站流量: ${NC}${GREEN}$tx_converted${NC}"
