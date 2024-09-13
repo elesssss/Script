@@ -9,8 +9,10 @@ NC="\033[0m"
 convert_bytes() {
     bytes=$1
 
-    if ((bytes >= 1024 ** 3)); then
-        echo "$((bytes / 1024 ** 3)) GB"
+    if ((bytes >= 1024 ** 4)); then
+        printf "%.2f TB\n" "$(echo "scale=2; $bytes / 1024^4" | bc)"
+    elif ((bytes >= 1024 ** 3)); then
+        printf "%.2f GB\n" "$(echo "scale=2; $bytes / 1024^3" | bc)"
     elif ((bytes >= 1024 ** 2)); then
         echo "$((bytes / 1024 ** 2)) MB"
     elif ((bytes >= 1024)); then
