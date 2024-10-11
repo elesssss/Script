@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 Red="\033[31m" # 红色
@@ -13,8 +14,6 @@ Info="${Green}[信息]${Nc}"
 Error="${Red}[错误]${Nc}"
 Tip="${Yellow}[提示]${Nc}"
 start_time=$(date +%s) # 记录开始时间
-end_time=$(date +%s) # 记录结束时间
-duration=$((end_time - start_time)) # 计算持续时间
 
 # 检查是否为root用户
 check_root(){
@@ -102,7 +101,7 @@ install_base(){
 }
 
 get_public_ip(){
-    InFaces=($(netstat -i | awk '{print $1}' | grep -E '^(eth|ens|eno|esp|enp|venet|veth|vif)'))
+    InFaces=($(netstat -i | awk '{print $1}' ))
 
     for i in "${InFaces[@]}"; do # 从网口循环获取IP
         IPv4=$(curl -s4 --max-time 2 --interface "$i" ip.gs)
@@ -118,6 +117,9 @@ Echo_IP(){
     get_public_ip
     echo -e "${Info} IPv4 是${Green} ${IPv4}${Nc}"
     echo -e "${Info} IPv6 是${Green} ${IPv6}${Nc}"
+    
+    end_time=$(date +%s) # 在脚本结束时记录结束时间
+    duration=$((end_time - start_time)) # 计算持续时间
     echo -e "${Info} 脚本运行时间: ${Green}${duration}${Nc} 秒。"
 }
 
