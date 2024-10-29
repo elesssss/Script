@@ -1,4 +1,4 @@
-# Configure startup scripts
+# OpenWrt自动扩容
 opkg update
 opkg install parted losetup resize2fs
 
