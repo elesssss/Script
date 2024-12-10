@@ -280,7 +280,7 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=/var/nezha/agent/
-ExecStart=/var/nezha/agent/agent -s nz_grpc_host:nz_grpc_port -p nz_client_secret
+ExecStart=/var/nezha/agent/agent -s nz_grpc_host:nz_grpc_port -p nz_client_secret --disable-auto-update
 Restart=always
 
 [Install]
