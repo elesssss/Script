@@ -210,6 +210,7 @@ EOF
     sed -i "s/8008/${nz_grpc_port}/" ${path}
     sed -i "s/your_agent_secret/${agent_secret}/" ${path}
     sed -i "s/your_uuid/${your_uuid}/" ${path}
+    systemctl restart agent
     success "nezha-agent successfully installed"
 }
 
