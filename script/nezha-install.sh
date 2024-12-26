@@ -157,10 +157,7 @@ install() {
 
     path="$NZ_AGENT_PATH/config.yml"
 
-    if [ ! -e "$NZ_AGENT_SERVICE" ]; then
-        err "service file not be empty"
-        touch_service
-    fi
+    touch_service
 
     cat >${path} <<-EOF
 client_secret: your_agent_secret
@@ -233,6 +230,7 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
+    systemctl daemon-reload
     systemctl enable --now agent
 }
 
