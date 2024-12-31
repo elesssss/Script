@@ -241,6 +241,7 @@ install_agent() {
     fi
 
     # 哪吒监控文件夹
+    rm -rf $NZ_AGENT_PATH
     mkdir -p $NZ_AGENT_PATH
 
     echo -e "正在下载监控端"
