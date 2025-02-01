@@ -64,7 +64,7 @@ check_os() {
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 8.0 或更高版本${plain}" && exit 1
         fi
-    elif [[ "$release" == "arch" || "$release" == "parch" || "$release" == "manjaro" || "$release" == "armbian" || "$release" == "alpine" || "$release" == "opensuse-tumbleweed" ]]; then
+    elif [[ "$release" == "kali" || "$release" == "arch" || "$release" == "parch" || "$release" == "manjaro" || "$release" == "armbian" || "$release" == "alpine" || "$release" == "opensuse-tumbleweed" ]]; then
         echo
     else
         echo -e "${red}抱歉，此脚本不支持您的操作系统。"
