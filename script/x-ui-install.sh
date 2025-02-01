@@ -200,7 +200,7 @@ config_after_install() {
 }
 
 install_x-ui() {
-    systemctl stop x-ui > /dev/null
+    systemctl stop x-ui &> /dev/null
     cd /usr/local/
 
     if [ $# == 0 ]; then
