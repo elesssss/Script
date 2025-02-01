@@ -65,7 +65,7 @@ case "${release}" in
     "openEuler")
         if [[ ${os_version} -lt 2203 ]]; then
             echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release OpenEuler 22.03 或更高版本${plain}" && exit 1
+            echo -e "${red}请使用 $release 22.03 或更高版本${plain}" && exit 1
         fi
         ;;
     "ubuntu")
