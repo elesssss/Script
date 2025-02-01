@@ -11,134 +11,100 @@ cur_dir=$(pwd)
 [[ $EUID -ne 0 ]] && echo -e "${red}错误：${plain} 必须使用root用户运行此脚本！\n" && exit 1
 
 # check os
-if [[ -e /etc/os-release ]]; then
-    . /etc/os-release
-    release=$ID
-elif [[ -e /usr/lib/os-release ]]; then
-    . /usr/lib/os-release
-    release=$ID
-fi
-
-os_version="${VERSION_ID%%.*}"  # 取整数部分，避免错误
-
-if [[ "${release}" == "ol" ]]; then
-    release="oracle"
-    if [[ ${os_version} -lt 8 ]]; then
-        echo -e "${red}你的系统是 $release $os_version${plain}"
-        echo -e "${red}请使用 $release 8 或更高版本${plain}" && exit 1
+check_os() {
+    if [[ -e /etc/os-release ]]; then
+        . /etc/os-release
+        release=$ID
+    elif [[ -e /usr/lib/os-release ]]; then
+        . /usr/lib/os-release
+        release=$ID
     fi
-elif [[ "${release}" == "centos" ]]; then
-    if [[ ${os_version} -lt 7 ]]; then
-        echo -e "${red}你的系统是 $release $os_version${plain}"
-        echo -e "${red}请使用 $release 7 或更高版本${plain}" && exit 1
-    fi
-elif [[ "${release}" == "fedora" ]]; then
-    if [[ ${os_version} -lt 36 ]]; then
-        echo -e "${red}你的系统是 $release $os_version${plain}"
-        echo -e "${red}请使用 $release 36 或更高版本${plain}" && exit 1
-    fi
-fi
 
-arch=$(arch)
+    os_version="${VERSION_ID%%.*}"  # 取整数部分，避免错误
 
-if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
-    arch="amd64"
-elif [[ $arch == "armv8*" || $arch == "armv8" || $arch == "aarch64" || $arch == "arm64" ]]; then
-    arch="arm64"
-elif [[ $arch == "armv7*" || $arch == "armv7" || $arch == "arm" ]]; then
-    arch="armv7"
-elif [[ $arch == "armv6*" || $arch == "armv6" ]]; then
-    arch="armv6"
-elif [[ $arch == "armv5*" || $arch == "armv5" ]]; then
-    arch="armv5"
-elif [[ $arch == "s390x" ]]; then
-    arch="s390x"
-else
-    echo -e "${red}检测到您的架构不支持，请联系作者！${plain}"
-    exit 1
-fi
-
-case "${release}" in
-    "arch" | "parch" | "manjaro" | "armbian" | "alpine" | "opensuse-tumbleweed")
-        echo "${release} 系统检测通过"
-        ;;
-    "openEuler")
-        if [[ ${os_version} -lt 2203 ]]; then
+    # 检查最低系统要求
+    if [[ "$release" == "ol" ]]; then
+        release="oracle"
+        if [[ "$os_version" -lt 8 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 8 或更高版本${plain}" && exit 1
+        fi
+    elif [[ "$release" == "centos" ]]; then
+        if [[ "$os_version" -lt 7 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 7 或更高版本${plain}" && exit 1
+        fi
+    elif [[ "$release" == "fedora" ]]; then
+        if [[ "$os_version" -lt 36 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 36 或更高版本${plain}" && exit 1
+        fi
+    elif [[ "$release" == "openEuler" ]]; then
+        if [[ "$os_version" -lt 2203 ]]; then
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 22.03 或更高版本${plain}" && exit 1
         fi
-        ;;
-    "ubuntu")
-        if [[ ${os_version} -lt 20 ]]; then
+    elif [[ "$release" == "ubuntu" ]]; then
+        if [[ "$os_version" -lt 20 ]]; then
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 20.04 或更高版本${plain}" && exit 1
         fi
-        ;;
-    "amzn")
-        if [[ ${os_version} != "2023" ]]; then
+    elif [[ "$release" == "amzn" ]]; then
+        if [[ "$os_version" != "2023" ]]; then
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 2023 或更高版本${plain}" && exit 1
         fi
-        ;;
-    "debian")
-        if [[ ${os_version} -lt 10 ]]; then
+    elif [[ "$release" == "debian" ]]; then
+        if [[ "$os_version" -lt 10 ]]; then
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 10 或更高版本${plain}" && exit 1
         fi
-        ;;
-    "almalinux" | "rocky")
-        if [[ ${os_version} -lt 8 ]]; then
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" ]]; then
+        if [[ "$os_version" -lt 8 ]]; then
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 8.0 或更高版本${plain}" && exit 1
         fi
-        ;;
-    *)
+    elif [[ "$release" == "arch" || "$release" == "parch" || "$release" == "manjaro" || "$release" == "armbian" || "$release" == "alpine" || "$release" == "opensuse-tumbleweed" ]]; then
+        echo
+    else
         echo -e "${red}抱歉，此脚本不支持您的操作系统。"
         exit 1
-        ;;
-esac
-
-echo "架构: ${arch}"
+    fi
+}
 
 check_pmc() {
-    case "$release" in
-        "debian" | "ubuntu" | "kali" | "armbian")
-            updates="apt update -y"
-            installs="apt install -y"
-            check_install="dpkg -s"
-            apps=("wget" "curl" "tar" "jq")
-            ;;
-        "alpine")
-            updates="apk update -f"
-            installs="apk add -f"
-            check_install="apk info -e"
-            apps=("wget" "curl" "tar" "jq")
-            ;;
-        "almalinux" | "rocky" | "oracle" | "centos")
-            updates="yum update -y"
-            installs="yum install -y"
-            check_install="yum list installed"
-            apps=("wget" "curl" "tar" "jq")
-            ;;
-        "fedora" | "amzn")
-            updates="dnf update -y"
-            installs="dnf install -y"
-            check_install="dnf list installed"
-            apps=("wget" "curl" "tar" "jq")
-            ;;
-        "arch" | "manjaro" | "parch")
-            updates="pacman -Syu"
-            installs="pacman -Syu --noconfirm"
-            check_install="pacman -Q"
-            apps=("wget" "curl" "tar" "jq")
-            ;;
-        "opensuse-tumbleweed")
-            updates="zypper refresh"
-            installs="zypper -q install -y"
-            check_install="zypper search --installed-only"
-            apps=("wget" "curl" "tar" "jq")
-            ;;
-    esac
+    check_os
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
+        check_install="dpkg -s"
+        apps=("wget" "curl" "tar" "jq")
+    elif [[ "$release" == "alpine" ]]; then
+        updates="apk update -f"
+        installs="apk add -f"
+        check_install="apk info -e"
+        apps=("wget" "curl" "tar" "jq")
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
+        check_install="yum list installed"
+        apps=("wget" "curl" "tar" "jq")
+    elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        check_install="dnf list installed"
+        apps=("wget" "curl" "tar" "jq")
+    elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
+        updates="pacman -Syu"
+        installs="pacman -Syu --noconfirm"
+        check_install="pacman -Q"
+        apps=("wget" "curl" "tar" "jq")
+    elif [[ "$release" == "opensuse-tumbleweed" ]]; then
+        updates="zypper refresh"
+        installs="zypper -q install -y"
+        check_install="zypper search --installed-only"
+        apps=("wget" "curl" "tar" "jq")
+    fi
 }
 
 install_base() {
@@ -160,6 +126,28 @@ install_base() {
     else
         echo -e "${green} 所有依赖已存在，不需要额外安装。${plain}"
     fi
+}
+
+check_arch() {
+    arch=$(arch)
+    if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
+        arch="amd64"
+    elif [[ $arch == "aarch64" || $arch == "arm64" || $arch == armv8* ]]; then
+        arch="arm64"
+    elif [[ $arch == "armv7l" || $arch == "armv7" || $arch == arm* ]]; then
+        arch="armv7"
+    elif [[ $arch == "armv6l" || $arch == "armv6" ]]; then
+        arch="armv6"
+    elif [[ $arch == "armv5l" || $arch == "armv5" ]]; then
+        arch="armv5"
+    elif [[ $arch == "s390x" ]]; then
+        arch="s390x"
+    else
+        echo -e "${red}检测到您的架构不支持，请联系作者！${plain}"
+        exit 1
+    fi
+
+    echo "架构: ${arch}"
 }
 
 #This function will be called when user installed x-ui out of sercurity
@@ -201,6 +189,7 @@ config_after_install() {
 
 install_x-ui() {
     systemctl stop x-ui &> /dev/null
+    check_arch
     cd /usr/local/
 
     if [ $# == 0 ]; then
@@ -210,7 +199,7 @@ install_x-ui() {
             exit 1
         fi
         echo -e "检测到 x-ui 最新版本：${last_version}，开始安装"
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz
+        wget --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${red}下载 x-ui 失败，请确保你的服务器能够下载 Github 的文件${plain}"
             exit 1
@@ -219,7 +208,7 @@ install_x-ui() {
         last_version=$1
         url="https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz"
         echo -e "开始安装 x-ui v$1"
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz ${url}
+        wget --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz ${url}
         if [[ $? -ne 0 ]]; then
             echo -e "${red}下载 x-ui v$1 失败，请确保此版本存在${plain}"
             exit 1
