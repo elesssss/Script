@@ -11,71 +11,154 @@ cur_dir=$(pwd)
 [[ $EUID -ne 0 ]] && echo -e "${red}错误：${plain} 必须使用root用户运行此脚本！\n" && exit 1
 
 # check os
-if [[ -f /etc/redhat-release ]]; then
-    release="centos"
-elif cat /etc/issue | grep -Eqi "debian"; then
-    release="debian"
-elif cat /etc/issue | grep -Eqi "ubuntu"; then
-    release="ubuntu"
-elif cat /etc/issue | grep -Eqi "centos|red hat|redhat"; then
-    release="centos"
-elif cat /proc/version | grep -Eqi "debian"; then
-    release="debian"
-elif cat /proc/version | grep -Eqi "ubuntu"; then
-    release="ubuntu"
-elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
-    release="centos"
-else
-    echo -e "${red}未检测到系统版本，请联系脚本作者！${plain}\n" && exit 1
+if [[ -e /etc/os-release ]]; then
+    . /etc/os-release
+    release=$ID
+elif [[ -e /usr/lib/os-release ]]; then
+    . /usr/lib/os-release
+    release=$ID
+fi
+
+os_version="${VERSION_ID%%.*}"  # 取整数部分，避免错误
+
+if [[ "${release}" == "ol" ]]; then
+    release="oracle"
+    if [[ ${os_version} -lt 8 ]]; then
+        echo -e "${red}你的系统是 $release $os_version${plain}"
+        echo -e "${red}请使用 $release 8 或更高版本${plain}" && exit 1
+    fi
+elif [[ "${release}" == "centos" ]]; then
+    if [[ ${os_version} -lt 7 ]]; then
+        echo -e "${red}你的系统是 $release $os_version${plain}"
+        echo -e "${red}请使用 $release 7 或更高版本${plain}" && exit 1
+    fi
+elif [[ "${release}" == "fedora" ]]; then
+    if [[ ${os_version} -lt 36 ]]; then
+        echo -e "${red}你的系统是 $release $os_version${plain}"
+        echo -e "${red}请使用 $release 36 或更高版本${plain}" && exit 1
+    fi
 fi
 
 arch=$(arch)
 
-if [[ $arch == "x86_64" || $arch == "x64" || $arch == "s390x" || $arch == "amd64" ]]; then
+if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
     arch="amd64"
-elif [[ $arch == "aarch64" || $arch == "arm64" ]]; then
+elif [[ $arch == "armv8*" || $arch == "armv8" || $arch == "aarch64" || $arch == "arm64" ]]; then
     arch="arm64"
+elif [[ $arch == "armv7*" || $arch == "armv7" || $arch == "arm" ]]; then
+    arch="armv7"
+elif [[ $arch == "armv6*" || $arch == "armv6" ]]; then
+    arch="armv6"
+elif [[ $arch == "armv5*" || $arch == "armv5" ]]; then
+    arch="armv5"
+elif [[ $arch == "s390x" ]]; then
+    arch="s390x"
 else
-    arch="amd64"
-    echo -e "${red}检测架构失败，使用默认架构: ${arch}${plain}"
+    echo -e "${red}检测到您的架构不支持，请联系作者！${plain}"
+    exit 1
 fi
+
+case "${release}" in
+    "arch" | "parch" | "manjaro" | "armbian" | "alpine" | "opensuse-tumbleweed")
+        echo "${release} 系统检测通过"
+        ;;
+    "openEuler")
+        if [[ ${os_version} -lt 2203 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release OpenEuler 22.03 或更高版本${plain}" && exit 1
+        fi
+        ;;
+    "ubuntu")
+        if [[ ${os_version} -lt 20 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 20.04 或更高版本${plain}" && exit 1
+        fi
+        ;;
+    "amzn")
+        if [[ ${os_version} != "2023" ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 2023 或更高版本${plain}" && exit 1
+        fi
+        ;;
+    "debian")
+        if [[ ${os_version} -lt 10 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 10 或更高版本${plain}" && exit 1
+        fi
+        ;;
+    "almalinux" | "rocky")
+        if [[ ${os_version} -lt 8 ]]; then
+            echo -e "${red}你的系统是 $release $os_version${plain}"
+            echo -e "${red}请使用 $release 8.0 或更高版本${plain}" && exit 1
+        fi
+        ;;
+    *)
+        echo -e "${red}抱歉，此脚本不支持您的操作系统。"
+        exit 1
+        ;;
+esac
 
 echo "架构: ${arch}"
 
-if [ $(getconf WORD_BIT) != '32' ] && [ $(getconf LONG_BIT) != '64' ]; then
-    echo "本软件不支持 32 位系统(x86)，请使用 64 位系统(x86_64)，如果检测有误，请联系作者"
-    exit -1
-fi
-
-os_version=""
-
-# os version
-if [[ -f /etc/os-release ]]; then
-    os_version=$(awk -F'[= ."]' '/VERSION_ID/{print $3}' /etc/os-release)
-fi
-if [[ -z "$os_version" && -f /etc/lsb-release ]]; then
-    os_version=$(awk -F'[= ."]+' '/DISTRIB_RELEASE/{print $2}' /etc/lsb-release)
-fi
-
-if [[ x"${release}" == x"centos" ]]; then
-    if [[ ${os_version} -le 6 ]]; then
-        echo -e "${red}请使用 CentOS 7 或更高版本的系统！${plain}\n" && exit 1
-    fi
-elif [[ x"${release}" == x"ubuntu" ]]; then
-    if [[ ${os_version} -lt 16 ]]; then
-        echo -e "${red}请使用 Ubuntu 16 或更高版本的系统！${plain}\n" && exit 1
-    fi
-elif [[ x"${release}" == x"debian" ]]; then
-    if [[ ${os_version} -lt 8 ]]; then
-        echo -e "${red}请使用 Debian 8 或更高版本的系统！${plain}\n" && exit 1
-    fi
-fi
+check_pmc() {
+    case "$release" in
+        "debian" | "ubuntu" | "kali" | "armbian")
+            updates="apt update -y"
+            installs="apt install -y"
+            check_install="dpkg -s"
+            apps=("wget" "curl" "tar" "jq")
+            ;;
+        "alpine")
+            updates="apk update -f"
+            installs="apk add -f"
+            check_install="apk info -e"
+            apps=("wget" "curl" "tar" "jq")
+            ;;
+        "almalinux" | "rocky" | "oracle" | "centos")
+            updates="yum update -y"
+            installs="yum install -y"
+            check_install="yum list installed"
+            apps=("wget" "curl" "tar" "jq")
+            ;;
+        "fedora" | "amzn")
+            updates="dnf update -y"
+            installs="dnf install -y"
+            check_install="dnf list installed"
+            apps=("wget" "curl" "tar" "jq")
+            ;;
+        "arch" | "manjaro" | "parch")
+            updates="pacman -Syu"
+            installs="pacman -Syu --noconfirm"
+            check_install="pacman -Q"
+            apps=("wget" "curl" "tar" "jq")
+            ;;
+        "opensuse-tumbleweed")
+            updates="zypper refresh"
+            installs="zypper -q install -y"
+            check_install="zypper search --installed-only"
+            apps=("wget" "curl" "tar" "jq")
+            ;;
+    esac
+}
 
 install_base() {
-    if [[ x"${release}" == x"centos" ]]; then
-        yum install wget curl tar jq -y
+    check_pmc
+    cmds=("wget" "curl" "tar" "jq")
+    echo -e "你的系统是${red} $release $os_version ${plain}"
+
+    for g in "${!apps[@]}"; do
+        if ! $check_install "${apps[$g]}" &> /dev/null; then
+            CMDS+=(${cmds[g]})
+            DEPS+=("${apps[$g]}")
+        fi
+    done
+
+    if [ ${#DEPS[@]} -gt 0 ]; then
+        echo -e " 安装依赖列表：${green}${CMDS[@]}${plain} 请稍后..."
+        $updates &> /dev/null
+        $installs "${DEPS[@]}" &> /dev/null
     else
-        apt install wget curl tar jq -y
+        echo -e "${green} 所有依赖已存在，不需要额外安装。${plain}"
     fi
 }
 
@@ -117,7 +200,7 @@ config_after_install() {
 }
 
 install_x-ui() {
-    systemctl stop x-ui
+    systemctl stop x-ui > /dev/null
     cd /usr/local/
 
     if [ $# == 0 ]; then
