@@ -16,37 +16,39 @@ payment_types = {1: '支付宝', 2: '微信', 7: 'TRX', 8: 'USDT'} # 支付方�
 
 # 设置用于MySQL连接的引擎
 engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
-
 metadata = MetaData()
-
-# 读取数据库表结构
 TABLE_NAME = 'pay_order'
 pay_order = Table(TABLE_NAME, metadata, autoload_with=engine)
 
-# 初始化，获取最新一条支付成功的订单
-with engine.connect() as connection:
-    s = select(pay_order).where(pay_order.c.status == '1').order_by(desc(pay_order.c.trade_no))
-    result = connection.execute(s)
-    last_order = result.fetchone()._asdict()  # Convert to dictionary
+# 获取最新的支付成功订单
+def get_latest_order():
+    with engine.connect() as connection:
+        s = select(pay_order).where(pay_order.c.status == '1').order_by(desc(pay_order.c.trade_no))
+        result = connection.execute(s).fetchone()
+        return dict(result._mapping) if result else None  # 处理 None 返回值
 
-# 循环检查新的支付成功的订单
+# 初始化最新订单
+last_order = get_latest_order()
+
 try:
     while True:
-        with engine.connect() as connection:
-            s = select(pay_order).where(pay_order.c.status == '1').order_by(desc(pay_order.c.trade_no))
-            result = connection.execute(s)
-            new_order = result.fetchone()._asdict()  # Convert to dictionary
+        new_order = get_latest_order()
+        
+        if new_order and (not last_order or last_order['trade_no'] != new_order['trade_no']):
+            last_order = new_order  # 更新最新订单
+            
+            # 发送 Telegram 通知
+            text = (
+                f"🎉 易支付新订单 🎉\n"
+                f"———————————————\n"
+                f"🔗 订单号：{last_order['trade_no']}\n"
+                f"💴 订单金额：{last_order['money']}\n"
+                f"⚖️ 商品名称：{last_order['name']}\n"
+                f"💰 支付方式：{payment_types.get(last_order['type'], '未知')}"
+            )
+            url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage?chat_id={TG_CHAT_ID}&text={text}"
+            requests.get(url)
 
-            # 检查新的订单是否是刚刚检查过的订单
-            if last_order['trade_no'] != new_order['trade_no']:
-                last_order = new_order
-
-                # 当有新的成功支付的订单时，发送通知到Telegram
-                text = f"🎉易支付新订单🎉\n———————————————\n🔗订单号：{last_order['trade_no']}\n💴订单金额：{last_order['money']}\n⚖️商品名称：{last_order['name']}\n💰支付方式：{payment_types[last_order['type']]}"
-                url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage?chat_id={TG_CHAT_ID}&text={text}"
-                requests.get(url)
-
-        # 每30秒检查一次
-        sleep(30)
+        sleep(30)  # 每 30 秒检查一次
 except KeyboardInterrupt:
-    print("\n程序已经安全退出")
+    print("\n程序已安全退出")
