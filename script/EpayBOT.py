@@ -5,16 +5,21 @@ from sqlalchemy import create_engine, MetaData, Table, select
 from sqlalchemy.sql import desc
 from time import sleep
 
+# 配置 Telegram 机器人
 TG_BOT_TOKEN = '<替换为你的机器人token>'
 TG_CHAT_ID = '<替换为你的TG ID>'
+
+# 数据库配置
 DB_HOST = '<替换为你的数据库地址>'
 DB_PORT = '<替换为你的数据库端口>'
 DB_NAME = '<替换为你的数据库名>'
 DB_USER = '<替换为你的数据库用户名>'
 DB_PASSWORD = '<替换为你的数据库密码>'
-payment_types = {1: '支付宝', 2: '微信', 7: 'TRX', 8: 'USDT'} # 支付方式
 
-# 设置用于MySQL连接的引擎
+# 支付方式映射
+payment_types = {1: '支付宝', 2: '微信', 7: 'TRX', 8: 'USDT'}
+
+# 设置数据库连接
 engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 metadata = MetaData()
 TABLE_NAME = 'pay_order'
@@ -52,3 +57,4 @@ try:
         sleep(30)  # 每 30 秒检查一次
 except KeyboardInterrupt:
     print("\n程序已安全退出")
+    
