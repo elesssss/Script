@@ -5,6 +5,7 @@ import requests
 from sqlalchemy import create_engine, MetaData, Table, select
 from sqlalchemy.sql import desc
 from time import sleep
+import logging
 
 # 配置 Telegram 机器人
 TG_BOT_TOKEN = '<替换为你的机器人token>'
@@ -19,6 +20,15 @@ DB_PASSWORD = '<替换为你的数据库密码>'
 
 # 支付方式映射
 payment_types = {1: '支付宝', 2: '微信', 7: 'TRX', 8: 'USDT'}
+
+# 配置日志
+logging.basicConfig(
+    filename='log_epaybot',  # 日志文件
+    level=logging.INFO,  # 日志级别，INFO 以上级别会记录
+    format='%(asctime)s - %(levelname)s - %(message)s',  # 只保留到秒
+    datefmt='%Y-%m-%d %H:%M:%S',  # 设置时间格式，去掉毫秒
+    filemode='w'  # 每次启动时清空日志文件
+)
 
 # 设置数据库连接
 engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
@@ -40,10 +50,11 @@ try:
     while True:
         new_order = get_latest_order()
         
+        # 如果有新订单且订单号不同，更新 last_order
         if new_order and (not last_order or last_order.get('trade_no') != new_order.get('trade_no')):
             last_order = new_order  # 更新最新订单
             
-            # 发送 Telegram 通知
+            # 准备通知的文本内容
             text = (
                 f"🎉 易支付新订单 🎉\n"
                 f"———————————————\n"
@@ -55,16 +66,21 @@ try:
 
             # **终端输出通知**
             print(text)
+            logging.info(f"新订单通知: {text}")
 
-            # **发送到 Telegram**
+            # **发送到 Telegram机器人**
             url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage?chat_id={TG_CHAT_ID}&text={text}"
             try:
                 response = requests.get(url, timeout=5)  # 设置超时时间 5 秒
 
+                # 根据响应状态判断通知是否成功
                 if response.status_code == 200:
                     status = "成功"
+                    logging.info(f"Telegram 通知: {status}")
                 else:
                     status = "失败"
+                    logging.error(f"Telegram 通知: {status}")
+
                 print(f"Telegram 通知: {status}")
             except requests.exceptions.Timeout:
                 print("⚠️ 发送 Telegram 消息超时，请检查网络连接！")
@@ -72,3 +88,4 @@ try:
         sleep(30)  # 每 30 秒检查一次
 except KeyboardInterrupt:
     print("\n程序已安全退出")
+    logging.info("程序已安全退出")
