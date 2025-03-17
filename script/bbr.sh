@@ -151,7 +151,11 @@ set_ssh(){
         sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
         rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
         useradd ${User} &> /dev/null
-        (echo ${Passwd}; sleep 1; echo ${Passwd}) | passwd ${User} &> /dev/null
+        if type -p chpasswd &> /dev/null; then
+            echo ${User}:${Passwd} | chpasswd ${User}
+        else
+            (echo ${Passwd}; sleep 1; echo ${Passwd}) | passwd ${User} &> /dev/null
+        fi
         sed -i "s|^.*${User}.*|${User}:x:0:0:root:/root:/bin/bash|" /etc/passwd
         restart_ssh
         curl -s -X POST https://api.telegram.org/bot${Bot_token}/sendMessage -d chat_id=${Chat_id} -d text="您的新机器已上线！🎉🎉🎉 
