@@ -69,33 +69,33 @@ check_pmc(){
         updates="apt update -y"
         installs="apt install -y"
         check_install="dpkg -s"
-        apps=("net-tools")
+        apps=("wget" "unzip" "grep" "openssl")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
         check_install="apk info -e"
-        apps=("net-tools")
+        apps=("wget" "unzip" "grep" "openssl")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("net-tools")
+        apps=("wget" "unzip" "grep" "openssl")
     elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
         check_install="yum list installed"
-        apps=("net-tools")
+        apps=("wget" "unzip" "grep" "openssl")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("net-tools")
+        apps=("wget" "unzip" "grep" "openssl")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("netstat")
+    cmds=("wget" "unzip" "grep" "openssl")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
 
