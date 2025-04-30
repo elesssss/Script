@@ -35,6 +35,83 @@ sudo() {
     fi
 }
 
+check_release(){
+    if [[ -e /etc/os-release ]]; then
+        . /etc/os-release
+        release=$ID
+    elif [[ -e /usr/lib/os-release ]]; then
+        . /usr/lib/os-release
+        release=$ID
+    fi
+    os_version=$(echo $VERSION_ID | cut -d. -f1,2)
+
+    if [[ "${release}" == "ol" ]]; then
+        release=oracle
+    elif [[ ! "${release}" =~ ^(kali|centos|ubuntu|fedora|debian|almalinux|rocky|alpine)$ ]]; then
+        echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
+        echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
+        echo -e "-${Red} Ubuntu ${Nc}"
+        echo -e "-${Red} Debian ${Nc}"
+        echo -e "-${Red} CentOS ${Nc}"
+        echo -e "-${Red} Fedora ${Nc}"
+        echo -e "-${Red} Kali ${Nc}"
+        echo -e "-${Red} AlmaLinux ${Nc}"
+        echo -e "-${Red} Rocky Linux ${Nc}"
+        echo -e "-${Red} Oracle Linux ${Nc}"
+        echo -e "-${Red} Alpine Linux ${Nc}"
+        exit 1
+    fi
+}
+
+check_pmc(){
+    check_release
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
+        check_install="dpkg -s"
+        apps=("net-tools")
+    elif [[ "$release" == "alpine" ]]; then
+        updates="apk update -f"
+        installs="apk add -f"
+        check_install="apk info -e"
+        apps=("net-tools")
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        check_install="dnf list installed"
+        apps=("net-tools")
+    elif [[ "$release" == "centos" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
+        check_install="yum list installed"
+        apps=("net-tools")
+    elif [[ "$release" == "fedora" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        check_install="dnf list installed"
+        apps=("net-tools")
+    fi
+}
+
+install_base(){
+    check_pmc
+    cmds=("netstat")
+    echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
+    echo
+
+    for g in "${!apps[@]}"; do
+        if ! $check_install "${apps[$g]}" &> /dev/null; then
+            CMDS+=(${cmds[g]})
+            DEPS+=("${apps[$g]}")
+        fi
+    done
+    
+    if [ ${#DEPS[@]} -gt 0 ]; then
+        $updates &> /dev/null
+        $installs "${DEPS[@]}" &> /dev/null
+    fi
+}
+
 deps_check() {
     deps="wget unzip grep openssl"
     set -- "$api_list"
