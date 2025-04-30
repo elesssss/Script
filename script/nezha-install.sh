@@ -4,21 +4,30 @@ NZ_BASE_PATH="/var/nezha"
 NZ_AGENT_PATH="${NZ_BASE_PATH}/agent"
 NZ_AGENT_SERVICE="/lib/systemd/system/agent.service"
 
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[0;33m'
-plain='\033[0m'
+Red="\033[31m" # 红色
+Green="\033[32m" # 绿色
+Yellow="\033[33m" # 黄色
+Blue="\033[34m" # 蓝色
+Nc="\033[0m" # 重置颜色
+Red_globa="\033[41;37m" # 红底白字
+Green_globa="\033[42;37m" # 绿底白字
+Yellow_globa="\033[43;37m" # 黄底白字
+Blue_globa="\033[44;37m" # 蓝底白字
+Info="${Green}[信息]${Nc}"
+Error="${Red}[错误]${Nc}"
+Tip="${Yellow}[提示]${Nc}"
+
 
 err() {
-    printf "${red}%s${plain}\n" "$*" >&2
+    printf "${Red}%s${Nc}\n" "$*" >&2
 }
 
 success() {
-    printf "${green}%s${plain}\n" "$*"
+    printf "${Green}%s${Nc}\n" "$*"
 }
 
 info() {
-	printf "${yellow}%s${plain}\n" "$*"
+	printf "${Yellow}%s${Nc}\n" "$*"
 }
 
 sudo() {
@@ -112,17 +121,6 @@ install_base(){
     fi
 }
 
-deps_check() {
-    deps="wget unzip grep openssl"
-    set -- "$api_list"
-    for dep in $deps; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            err "$dep not found, please install it first."
-            exit 1
-        fi
-    done
-}
-
 geo_check() {
     api_list="https://blog.cloudflare.com/cdn-cgi/trace https://developers.cloudflare.com/cdn-cgi/trace"
     ua="Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/81.0"
@@ -191,7 +189,7 @@ env_check() {
 }
 
 init() {
-    deps_check
+    install_base
     env_check
 
     ## China_IP
@@ -266,7 +264,7 @@ EOF
         read -ep "请输入面板RPC端口 (默认值 8008): " nz_grpc_port &&
         read -ep "请输入Agent 密钥: " agent_secret
         if [[ -z "${nz_grpc_host}" || -z "${agent_secret}" ]]; then
-            echo -e "${red}所有选项都不能为空${plain}"
+            echo -e "${Red}所有选项都不能为空${Nc}"
             exit 1
         fi
         if [[ -z "${nz_grpc_port}" ]]; then
