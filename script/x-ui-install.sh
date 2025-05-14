@@ -130,7 +130,7 @@ check_arch() {
     arch=$(arch)
     if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
         arch="amd64"
-    if [[ $arch == i*86 || $arch == "x86" ]]; then
+    elif [[ $arch == i*86 || $arch == "x86" ]]; then
         arch="386"
     elif [[ $arch == "aarch64" || $arch == "arm64" || $arch == armv8* ]]; then
         arch="arm64"
