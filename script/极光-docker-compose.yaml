@@ -39,7 +39,7 @@ services:
     environment:
       TZ: 'Asia/Shanghai'
     ports:
-      - "[::1]:50080:80"
+      - "50080:80"
     networks:
       - aurora
 
