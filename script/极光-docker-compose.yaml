@@ -66,8 +66,6 @@ networks:
   aurora:
     driver: bridge
     enable_ipv6: true
-    driver_opts:
-      com.docker.network.enable_ipv6: "true"
     ipam:
       driver: default
       config:
