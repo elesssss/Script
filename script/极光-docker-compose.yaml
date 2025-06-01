@@ -1,7 +1,7 @@
 # 先在面板服务器生成好 ssh 密钥对。
 # ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_rsa -q
-# mkdir -p /var/aurora
-# cp -f ~/.ssh/id_rsa /var/aurora/id_rsa
+# mkdir -p /etc/aurora
+# cp -f ~/.ssh/id_rsa /etc/aurora/id_rsa
 # 然后还需要将面板服务器 ~/.ssh/id_rsa.pub 里面的内容复制到每一台被控机的 ~/.ssh/authorized_keys 文件中去。
 # 最后执行 docker-compose exec backend python app/initial_data.py 设置管理员账户
 services:
