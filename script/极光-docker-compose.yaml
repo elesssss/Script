@@ -1,0 +1,69 @@
+# 先在面板服务器生成好 ssh 密钥对。
+# ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_rsa -q
+# mkdir -p /var/aurora
+# cp -f ~/.ssh/id_rsa /var/aurora/id_rsa
+# 然后还需要将面板服务器 ~/.ssh/id_rsa.pub 里面的内容复制到每一台被控机的 ~/.ssh/authorized_keys 文件中去。
+# 最后执行 docker-compose exec backend python app/initial_data.py 设置管理员账户
+services:
+  worker:
+    image: leishi1313/aurora-admin-backend:latest
+    restart: always
+    command: bash worker.sh
+    environment:
+      TZ: 'Asia/Shanghai'
+      ENABLE_SENTRY: 'yes'
+      DATABASE_URL: 'postgresql://ryan1995:ryan1995.@postgres:5432/aurora'
+      TRAFFIC_INTERVAL_SECONDS: 600
+      DDNS_INTERVAL_SECONDS: 120
+    volumes:
+      - ./id_rsa:/app/ansible/env/ssh_key
+    networks:
+      - aurora
+
+  backend:
+    image: leishi1313/aurora-admin-backend:latest
+    restart: always
+    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; alembic upgrade heads && python app/main.py"
+    environment:
+      TZ: 'Asia/Shanghai'
+      PYTHONPATH: .
+      DATABASE_URL: 'postgresql://ryan1995:ryan1995.@postgres:5432/aurora'
+      ENABLE_SENTRY: 'yes'
+      SECREY_KEY: 'AuroraAdminPanel321'
+    networks:
+      - aurora
+
+  nginx:
+    image: leishi1313/aurora-admin-frontend:latest
+    restart: always
+    environment:
+      TZ: 'Asia/Shanghai'
+    ports:
+      - 50000:80
+    networks:
+      - aurora
+
+  redis:
+    image: redis
+    restart: always
+    environment:
+      TZ: 'Asia/Shanghai'
+    networks:
+      - aurora
+
+  postgres:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      TZ: 'Asia/Shanghai'
+      POSTGRES_USER: ryan1995
+      POSTGRES_PASSWORD: ryan1995.
+      POSTGRES_DB: aurora
+    networks:
+      - aurora
+
+networks:
+  aurora:
+    driver: bridge
+    ipam:
+      driver: default
