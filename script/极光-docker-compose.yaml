@@ -12,7 +12,7 @@ services:
     environment:
       TZ: 'Asia/Shanghai'
       ENABLE_SENTRY: 'yes'
-      DATABASE_URL: 'postgresql://ryan1995:ryan1995.@postgres:5432/aurora'
+      DATABASE_URL: 'postgresql://abcd1234:abcd1234.@postgres:5432/aurora'
       TRAFFIC_INTERVAL_SECONDS: 600
       DDNS_INTERVAL_SECONDS: 120
     volumes:
@@ -27,7 +27,7 @@ services:
     environment:
       TZ: 'Asia/Shanghai'
       PYTHONPATH: .
-      DATABASE_URL: 'postgresql://ryan1995:ryan1995.@postgres:5432/aurora'
+      DATABASE_URL: 'postgresql://abcd1234:abcd1234.@postgres:5432/aurora'
       ENABLE_SENTRY: 'yes'
       SECREY_KEY: 'AuroraAdminPanel321'
     networks:
@@ -56,8 +56,8 @@ services:
     restart: always
     environment:
       TZ: 'Asia/Shanghai'
-      POSTGRES_USER: ryan1995
-      POSTGRES_PASSWORD: ryan1995.
+      POSTGRES_USER: abcd1234
+      POSTGRES_PASSWORD: abcd1234.
       POSTGRES_DB: aurora
     networks:
       - aurora
