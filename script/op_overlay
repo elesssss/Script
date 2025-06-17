@@ -8,7 +8,10 @@ if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/ro
     ROOT_BLK="$(fdisk -l 2>/dev/null | awk '/^\/dev/{print $1}' | tail -n 2 | head -n 1)"
     ROOT_DISK="$(fdisk -l 2>/dev/null | awk '/^\/dev/{print $1}' | tail -n 2 | head -n 1 | sed 's/[0-9]*$//')"
     ROOT_PART="${ROOT_BLK##*[^0-9]}"
-    yes | parted -f -s "${ROOT_DISK}" resizepart "${ROOT_PART}" 100% || {
+    echo 请输入 yes
+    echo 请输入 yes
+    echo 请输入 yes
+    parted -f "${ROOT_DISK}" resizepart "${ROOT_PART}" 100% || {
         echo "分区扩展失败!"
         exit 1
     }
@@ -21,32 +24,20 @@ if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/ro
         mkdir -p /mnt/resize-tmp
         mount /dev/loop1 /mnt/resize-tmp
         umount /dev/loop1
-        FSTYPE="$(lsblk -f | awk '/loop1/{print $2}')"
-        
-        if [ "$FSTYPE" = "f2fs" ]; then
-            if ! resize.f2fs -f /dev/loop1; then
-                echo "f2fs扩容失败!"
-                exit 1
-            fi
-        elif [ "$FSTYPE" = "ext4" ]; then
-            if ! resize2fs -f /dev/loop1; then
-                echo "ext4扩容失败!"
-                exit 1
-            fi
-        fi
     else
         losetup /dev/loop1 "${ROOT_BLK}"
-        FSTYPE="$(lsblk -f | awk '/loop1/{print $2}')"
-        if [ "$FSTYPE" = "f2fs" ]; then
-            if ! resize.f2fs -f /dev/loop1; then
-                echo "f2fs扩容失败!"
-                exit 1
-            fi
-        elif [ "$FSTYPE" = "ext4" ]; then
-            if ! resize2fs -f /dev/loop1; then
-                echo "ext4扩容失败!"
-                exit 1
-            fi
+    fi
+
+    FSTYPE="$(lsblk -f | awk '/loop1/{print $2}')"
+    if [ "$FSTYPE" = "f2fs" ]; then
+        if ! resize.f2fs -f /dev/loop1; then
+            echo "f2fs扩容失败!"
+            exit 1
+        fi
+    elif [ "$FSTYPE" = "ext4" ]; then
+        if ! resize2fs -f /dev/loop1; then
+            echo "ext4扩容失败!"
+            exit 1
         fi
     fi
     reboot
