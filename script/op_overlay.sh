@@ -20,14 +20,13 @@ if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/ro
     if [ -n "$OFFSET" ] && [ "$OFFSET" -gt 0 ]; then
         # 创建新loop设备
         losetup -f -o "$OFFSET" "${ROOT_BLK}"
-        # 检查文件系统类型并扩容
         mkdir -p /mnt/resize-tmp
         mount /dev/loop1 /mnt/resize-tmp
         umount /dev/loop1
     else
         losetup /dev/loop1 "${ROOT_BLK}"
     fi
-
+    # 检查文件系统类型并扩容
     FSTYPE="$(lsblk -f | awk '/loop1/{print $2}')"
     if [ "$FSTYPE" = "f2fs" ]; then
         if ! resize.f2fs -f /dev/loop1; then
