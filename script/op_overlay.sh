@@ -1,6 +1,6 @@
 # Configure startup scripts
 opkg update
-opkg install parted lsblk losetup resize2fs f2fs-tools
+opkg install parted lsblk losetup resize2fs f2fs-tools && parted -l
 
 cat << "EOF" > /etc/uci-defaults/70-rootpt-resize
 if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/root-resize; then
@@ -8,7 +8,6 @@ if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/ro
     ROOT_BLK="$(fdisk -l 2>/dev/null | awk '/^\/dev/{print $1}' | tail -n 2 | head -n 1)"
     ROOT_DISK="$(fdisk -l 2>/dev/null | awk '/^\/dev/{print $1}' | tail -n 2 | head -n 1 | sed 's/[0-9]*$//')"
     ROOT_PART="${ROOT_BLK##*[^0-9]}"
-    parted -s -l
     echo 请输入 yes
     echo 请输入 yes
     echo 请输入 yes
