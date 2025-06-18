@@ -18,26 +18,27 @@ if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/ro
     reboot
 fi
 EOF
-
 cat << "EOF" > /etc/uci-defaults/80-rootpt-resize
 ROOT_BLK="$(fdisk -l 2>/dev/null | awk '/^\/dev/{print $1}' | tail -n 2 | head -n 1)"
-# 获取loop设备偏移量
-OFFSET="$(losetup | awk '/\/dev\/loop0/{print $3}')"
+OFFSET="$(losetup | awk '/\/dev\/loop0/{print $3}')" # 获取loop设备偏移量
+
 if [ -n "$OFFSET" ] && [ "$OFFSET" -gt 0 ]; then
-    # 创建新loop设备
-    losetup -f -o "$OFFSET" "${ROOT_BLK}"
+    LOOP="/dev/loop1"
+    losetup -f -o "$OFFSET" "${ROOT_BLK}" # 创建新loop设备
     mkdir -p /mnt/resize-tmp
-    mount /dev/loop1 /mnt/resize-tmp
-    umount /dev/loop1
+    mount "${LOOP}" /mnt/resize-tmp
+    umount "${LOOP}"
 else
-    losetup /dev/loop1 "${ROOT_BLK}"
+    LOOP="/dev/loop0"
+    losetup "${LOOP}" "${ROOT_BLK}"
 fi
+
 # 检查文件系统类型并扩容
-FSTYPE="$(lsblk -f | awk '/loop1/{print $2}')"
+FSTYPE="$(lsblk -f | awk '/loop/{print $2}' | head -n 2)"
 if [ "$FSTYPE" = "f2fs" ]; then
-    resize.f2fs -f /dev/loop1
+    resize.f2fs -f "${LOOP}"
 elif [ "$FSTYPE" = "ext4" ]; then
-    resize2fs -f /dev/loop1
+    resize2fs -f "${LOOP}"
 fi
 reboot
 EOF
