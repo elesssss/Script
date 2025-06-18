@@ -1,6 +1,6 @@
 # Configure startup scripts
 opkg update
-opkg install parted lsblk losetup resize2fs f2fs-tools && parted -l
+opkg install parted fdisk lsblk losetup resize2fs f2fs-tools && parted -l
 
 cat << "EOF" > /etc/uci-defaults/70-rootpt-resize
 if [ ! -e /etc/rootpt-resize ] && type parted >/dev/null && lock -n /var/lock/root-resize; then
