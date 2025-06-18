@@ -35,15 +35,9 @@ fi
 # 检查文件系统类型并扩容
 FSTYPE="$(lsblk -f | awk '/loop1/{print $2}')"
 if [ "$FSTYPE" = "f2fs" ]; then
-    if ! resize.f2fs -f /dev/loop1; then
-        echo "f2fs扩容失败!"
-        exit 1
-    fi
+    resize.f2fs -f /dev/loop1
 elif [ "$FSTYPE" = "ext4" ]; then
-    if ! resize2fs -f /dev/loop1; then
-        echo "ext4扩容失败!"
-        exit 1
-    fi
+    resize2fs -f /dev/loop1
 fi
 reboot
 EOF
