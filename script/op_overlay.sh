@@ -40,7 +40,7 @@ if type losetup > /dev/null && type resize2fs > /dev/null && type resize.f2fs > 
         umount "${LOOP}"
         resize.f2fs -f "${LOOP}"
     elif [ "$LOOP" = "/dev/loop0" ] && [ "$FSTYPE" = "ext4" ]; then
-        resize2fs -f /dev/loop0
+        resize2fs -f "${LOOP}"
         exit 1
     elif [ -z "$LOOP" ]; then
         LOOP="/dev/loop0"
