@@ -1,6 +1,6 @@
 # OpenWrt自动扩容
 opkg update
-opkg install parted fdisk losetup resize2fs f2fs-tools && parted -l
+opkg install parted fdisk lsblk losetup resize2fs f2fs-tools && parted -l
 
 cat << "EOF" > /etc/uci-defaults/70-rootpt-resize
 if type fdisk > /dev/null && type lsblk > /dev/null && type parted > /dev/null; then
