@@ -19,7 +19,7 @@ DB_USER = '<替换为你的数据库用户名>'
 DB_PASSWORD = '<替换为你的数据库密码>'
 
 # 支付方式映射
-payment_types = {1: '支付宝', 2: '微信', 7: 'TRX', 8: 'USDT'}
+payment_types = {1: '支付宝', 2: '微信', 7: 'TRX', 8: 'USDT-TRC20', 16: 'USDT-Polygon'}
 
 # 配置日志
 logging.basicConfig(
