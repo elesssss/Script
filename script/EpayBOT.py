@@ -18,13 +18,6 @@ DB_NAME = '<替换为你的数据库名>'
 DB_USER = '<替换为你的数据库用户名>'
 DB_PASSWORD = '<替换为你的数据库密码>'
 
-# 数据库配置
-DB_HOST = '168.138.199.140'
-DB_PORT = '3305'
-DB_NAME = 'epay'
-DB_USER = 'root'
-DB_PASSWORD = 'ryan1995'
-
 # 配置日志 
 logging.basicConfig(
     filename='log_epaybot',
