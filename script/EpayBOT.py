@@ -100,7 +100,7 @@ try:
                         status = "失败"
                         logging.error(f"Telegram 通知: {status}")
 
-                    print(f"Telegram 通知: {status}")
+                    print(f"Telegram 通知: {status}\n")
                 except requests.exceptions.Timeout:
                     print("⚠️ 发送 Telegram 消息超时，请检查网络连接！")
 
