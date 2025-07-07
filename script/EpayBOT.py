@@ -2,8 +2,8 @@
 # 需要 sqlalchemy >= 2.0.38  pip3 install sqlalchemy==2.0.38
 
 import requests
-from sqlalchemy import create_engine, MetaData, Table, select
-from sqlalchemy.sql import desc
+from sqlalchemy import create_engine, MetaData, Table, select, desc
+from sqlalchemy.sql import and_
 from time import sleep
 import logging
 
