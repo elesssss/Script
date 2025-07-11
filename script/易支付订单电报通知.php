@@ -103,8 +103,6 @@ break;
 // 订单支付完成通知
 // ./includes/lib/Payment.php 大约200行下面添加以下代码，
                 // === Telegram 通知 ===
-                
-                
                 $tg_chat_id_row = $DB->getRow("SELECT tg_chat_id FROM pay_user WHERE uid='{$order['uid']}' LIMIT 1");
                 $tg_chat_id = $tg_chat_id_row && !empty($tg_chat_id_row['tg_chat_id']) ? $tg_chat_id_row['tg_chat_id'] : '';
                 if (!empty($tg_chat_id)){
