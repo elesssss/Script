@@ -10,8 +10,12 @@
 						</div>
 					</div>
 				</div>
+				<div class="form-group">
+				  <div class="col-sm-offset-2 col-sm-4"></a>&nbsp;<a href="https://t.me/<替换为你的机器人用户名>" class="btn btn-sm btn-danger" target="_blank">绑定电报id后点我私聊bot</a>
+				 </div>
+				</div>
 
-// ./user/userinfo.php 大约255行下面添加以下代码，
+// ./user/userinfo.php 大约265行下面添加以下代码，
 function setTGid(){
 	var tg_chat_id = $('input[name="tg_chat_id"]').val().trim();
 	if (tg_chat_id !== '' && !/^-?\d+$/.test(tg_chat_id)) {
@@ -84,7 +88,7 @@ break;
 
 // api创建新订单通知
 // ./includes/lib/api/Pay.php 大约180行下面添加以下代码，
-            // === Telegram 通知 ===
+            // 通知电报机器人
             $tg_chat_id_row = $DB->getRow("SELECT tg_chat_id FROM pay_user WHERE uid='{$pid}' LIMIT 1");
             $tg_chat_id = $tg_chat_id_row && !empty($tg_chat_id_row['tg_chat_id']) ? $tg_chat_id_row['tg_chat_id'] : '';
             if (!empty($tg_chat_id)){
