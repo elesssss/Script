@@ -88,8 +88,8 @@ install_base(){
     
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Nc} 请稍后..."
-        $updates
-        $installs "${DEPS[@]}"
+        $updates &>/dev/null
+        $installs "${DEPS[@]}" &>/dev/null
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
