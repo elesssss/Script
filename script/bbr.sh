@@ -54,27 +54,22 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        check_install="dpkg -s"
         apps=("net-tools")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        check_install="apk info -e"
         apps=("net-tools")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        check_install="dnf list installed"
         apps=("net-tools")
     elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        check_install="yum list installed"
         apps=("net-tools")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        check_install="dnf list installed"
         apps=("net-tools")
     fi
 }
@@ -84,17 +79,16 @@ install_base(){
     cmds=("netstat")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
-
-    for g in "${!apps[@]}"; do
-        if ! $check_install "${apps[$g]}" &> /dev/null; then
-            CMDS+=(${cmds[g]})
-            DEPS+=("${apps[$g]}")
+    
+    for i in "${!cmds[@]}"; do
+        if ! which "${cmds[i]}" &>/dev/null; then
+            DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        $updates &> /dev/null
-        $installs "${DEPS[@]}" &> /dev/null
+        $updates &>/dev/null
+        $installs "${DEPS[@]}" &>/dev/null
     fi
 }
 
