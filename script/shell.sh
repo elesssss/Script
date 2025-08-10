@@ -80,17 +80,16 @@ install_base(){
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
 
-    for g in "${!apps[@]}"; do
-        if ! which "${apps[$g]}" &> /dev/null; then
-            CMDS+=(${cmds[g]})
-            DEPS+=("${apps[$g]}")
+    for i in "${!cmds[@]}"; do
+        if ! which "${cmds[i]}" &>/dev/null; then
+            DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${CMDS[@]}${Nc} 请稍后..."
-        $updates &> /dev/null
-        $installs "${DEPS[@]}" &> /dev/null
+        echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Nc} 请稍后..."
+        $updates
+        $installs "${DEPS[@]}"
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
