@@ -54,27 +54,22 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        check_install="dpkg -s"
         apps=("openssl" "python3" "xxd" "procps" "iproute2")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        check_install="apk info -e"
         apps=("openssl" "python3" "py3-cryptography" "xxd" "procps" "iproute2")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        check_install="dnf list installed"
         apps=("openssl" "python3.11" "vim-common" "procps-ng" "iproute")
     elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        check_install="yum list installed"
         apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        check_install="dnf list installed"
         apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
     fi
 }
@@ -86,7 +81,7 @@ install_base(){
     echo
 
     for g in "${!apps[@]}"; do
-        if ! $check_install "${apps[$g]}" &> /dev/null; then
+        if ! which "${apps[$g]}" &> /dev/null; then
             CMDS+=(${cmds[g]})
             DEPS+=("${apps[$g]}")
         fi
