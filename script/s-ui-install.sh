@@ -13,17 +13,28 @@ check_root(){
     fi
 }
 
-arch(){
-    case "$(uname -m)" in
-    x86_64 | x64 | amd64) echo 'amd64' ;;
-    i*86 | x86) echo '386' ;;
-    armv8* | armv8 | arm64 | aarch64) echo 'arm64' ;;
-    armv7* | armv7 | arm) echo 'armv7' ;;
-    armv6* | armv6) echo 'armv6' ;;
-    armv5* | armv5) echo 'armv5' ;;
-    s390x) echo 's390x' ;;
-    *) echo -e "${green}不支持的 CPU 架构！ ${plain}" && rm -f install.sh && exit 1 ;;
-    esac
+check_arch(){
+    arch=$(arch)
+    if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
+        arch="amd64"
+    elif [[ $arch == i*86 || $arch == "x86" ]]; then
+        arch="386"
+    elif [[ $arch == "aarch64" || $arch == "arm64" || $arch == armv8* ]]; then
+        arch="arm64"
+    elif [[ $arch == "armv7l" || $arch == "armv7" || $arch == arm* ]]; then
+        arch="armv7"
+    elif [[ $arch == "armv6l" || $arch == "armv6" ]]; then
+        arch="armv6"
+    elif [[ $arch == "armv5l" || $arch == "armv5" ]]; then
+        arch="armv5"
+    elif [[ $arch == "s390x" ]]; then
+        arch="s390x"
+    else
+        echo -e "${red}检测到您的架构不支持，请联系作者！${plain}"
+        exit 1
+    fi
+
+    echo "架构: ${arch}"
 }
 
 check_release(){
