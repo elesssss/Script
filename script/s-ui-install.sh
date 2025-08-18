@@ -41,7 +41,7 @@ check_release(){
         . /usr/lib/os-release
         release=$ID
     fi
-    os_version=$(echo $VERSION_ID | cut -d. -f1,2)
+    os_version=$(echo $VERSION_ID | cut -d \" -f2 | cut -d . -f1)
 
     if [[ "${release}" == "arch" ]]; then
         echo "您的系统是 Arch Linux"
@@ -105,29 +105,29 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("wget" "tar" "tzdata")
+        apps=("wget" "curl" "tar")
     elif [[ "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper install -y"
-        apps=("wget" "tar" "timezone")
+        apps=("wget" "curl" "tar")
     elif [[ "$release" == "almalinux" || "$release" == "centos" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("wget" "tar" "tzdata")
+        apps=("wget" "curl" "tar")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("wget" "tar" "tzdata")
+        apps=("wget" "curl" "tar")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch"  ]]; then
         updates="pacman -Syu"
         installs="pacman -Syu --noconfirm"
-        apps=("wget" "tar" "tzdata")
+        apps=("wget" "curl" "tar")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("wget" "tar" "tzdata")
+    cmds=("wget" "curl" "tar")
     echo -e "${green}[Info]${plain} 你的系统是${red} $release $os_version ${plain}"
     echo
 
@@ -138,17 +138,17 @@ install_base(){
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${yello}[Tip]${plain} 安装依赖列表：${Green}${DEPS[*]}${plain} 请稍后..."
+        echo -e "${yellow}[Tip]${plain} 安装依赖列表：${green}${DEPS[*]}${plain} 请稍后..."
         $updates &>/dev/null
         $installs "${DEPS[@]}" &>/dev/null
     else
-        echo -e "${yello}[Tip]${plain} 所有依赖已存在，不需要额外安装。"
+        echo -e "${yellow}[Tip]${plain} 所有依赖已存在，不需要额外安装。"
     fi
 }
 
 config_after_install(){
     echo -e "${yellow}Migration... ${plain}"
-    /usr/local/s-ui/sui migrate
+    /usr/local/s-ui/sui migrate &>/dev/null
     
     echo -e "${yellow}安装/更新完成！出于安全考虑，建议修改面板设置。 ${plain}"
     read -p "您是否要继续进行修改 [y/n]？ ": config_confirm
@@ -159,7 +159,7 @@ config_after_install(){
         read config_path
 
         # Sub configuration
-        echo -e "请输入$${yellow}订阅端口${plain} (默认值则留空):"
+        echo -e "请输入${yellow}订阅端口${plain} (默认值则留空):"
         read config_subPort
         echo -e "请输入${yellow}订阅路径${plain} (默认值则留空):" 
         read config_subPath
@@ -173,7 +173,7 @@ config_after_install(){
         [ -z "$config_subPath" ] || params="$params -subPath $config_subPath"
         /usr/local/s-ui/sui setting ${params}
 
-        read -p "您是否要更改管理员凭据 [是/否]? ": admin_confirm
+        read -p "您是否要更改管理员凭据 [y/n]? ": admin_confirm
         if [[ "${admin_confirm}" == "y" || "${admin_confirm}" == "Y" ]]; then
             # First admin credentials
             read -p "请设置您的用户名:" config_account
@@ -230,16 +230,16 @@ install_s-ui(){
             exit 1
         fi
         echo -e "已获取S-UI最新版本: ${last_version}, 开始安装..."
-        wget -N --no-check-certificate -O /tmp/s-ui-linux-$(arch).tar.gz https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-$(arch).tar.gz
+        wget -N --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${red}下载 s-ui 失败, 请确保您的服务器能够访问GitHub ${plain}"
             exit 1
         fi
     else
         last_version=$1
-        url="https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-$(arch).tar.gz"
+        url="https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz"
         echo -e "开始安装 s-ui v$1"
-        wget -N --no-check-certificate -O /tmp/s-ui-linux-$(arch).tar.gz ${url}
+        wget -N --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz ${url}
         if [[ $? -ne 0 ]]; then
             echo -e "${red}下载 s-ui v$1 失败，请确认该版本是否存在。${plain}"
             exit 1
@@ -250,8 +250,8 @@ install_s-ui(){
         systemctl stop s-ui
     fi
 
-    tar zxvf s-ui-linux-$(arch).tar.gz
-    rm s-ui-linux-$(arch).tar.gz -f
+    tar zxvf s-ui-linux-${arch}.tar.gz
+    rm s-ui-linux-${arch}.tar.gz -f
 
     wget -O /usr/bin/s-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
     chmod +x /usr/bin/s-ui
