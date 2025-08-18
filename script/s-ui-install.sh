@@ -8,7 +8,7 @@ plain='\033[0m'
 cur_dir=$(pwd)
 
 # check root
-[[ $EUID -ne 0 ]] && echo -e "${red}错误: ${plain} 请以root权限运行此脚本 \n " && exit 1
+[[ $EUID -ne 0 ]] && echo -e "${red}ERR: ${plain} 请以root权限运行此脚本 \n " && exit 1
 
 # Check OS and set release variable
 if [[ -f /etc/os-release ]]; then
@@ -116,6 +116,52 @@ install_base(){
         apt-get update && apt-get install -y -q wget curl tar tzdata
         ;;
     esac
+}
+
+check_pmc(){
+    check_release
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
+        apps=("wget" "tar" "tzdata")
+    elif [[ "$release" == "opensuse-tumbleweed" ]]; then
+        updates="zypper refresh"
+        installs="zypper install -y"
+        apps=("wget" "tar" "timezone")
+    elif [[ "$release" == "almalinux" || "$release" == "centos" || "$release" == "rocky" || "$release" == "oracle" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        apps=("wget" "tar" "tzdata")
+    elif [[ "$release" == "fedora" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        apps=("wget" "tar" "tzdata")
+    elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch"  ]]; then
+        updates="pacman -Syu"
+        installs="pacman -Syu --noconfirm"
+        apps=("wget" "tar" "tzdata")
+    fi
+}
+
+install_base(){
+    check_pmc
+    cmds=("wget" "tar" "tzdata")
+    echo -e "${green}[Info]${plain} 你的系统是${red} $release $os_version ${plain}"
+    echo
+
+    for i in "${!cmds[@]}"; do
+        if ! which "${cmds[i]}" &>/dev/null; then
+            DEPS+=("${apps[i]}")
+        fi
+    done
+    
+    if [ ${#DEPS[@]} -gt 0 ]; then
+        echo -e "${yello}[Tip]${plain} 安装依赖列表：${Green}${DEPS[*]}${plain} 请稍后..."
+        $updates &>/dev/null
+        $installs "${DEPS[@]}" &>/dev/null
+    else
+        echo -e "${yello}[Tip]${plain} 所有依赖已存在，不需要额外安装。"
+    fi
 }
 
 config_after_install(){
