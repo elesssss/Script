@@ -626,7 +626,7 @@ ssl_cert_issue_CF(){
             LOGI "2.Cloudflare Global API Key"
             LOGI "3.通过Cloudflare解析到当前服务器的域名。"
             LOGI "4.脚本用于申请证书。默认安装路径为 /root/cert "
-            confirm "请确认?[y/n]" "y"
+            confirm "请确认?" "y"
             if [ $? -eq 0 ]; then
                 if ! command -v ~/.acme.sh/acme.sh &>/dev/null; then
                     echo "acme.sh 无法找到。正在安装..."
