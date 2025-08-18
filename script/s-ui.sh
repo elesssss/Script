@@ -64,6 +64,7 @@ before_show_menu(){
 
 install(){
     bash <(curl -Ls https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui-install.sh)
+    check_status "$1"
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
