@@ -224,6 +224,7 @@ prepare_services(){
 }
 
 install_s-ui(){
+    check_arch
     cd /tmp/
 
     if [ $# == 0 ]; then
