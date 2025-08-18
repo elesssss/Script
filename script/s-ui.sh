@@ -295,7 +295,7 @@ show_log(){
 }
 
 update_shell(){
-    wget -O /usr/bin/s-ui -N --no-check-certificate https://github.com/alireza0/s-ui/raw/main/s-ui.sh
+    wget -O /usr/bin/s-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "无法下载脚本，请检查机器是否能连接GitHub"
