@@ -6,12 +6,8 @@ yellow='\033[0;33m'
 plain='\033[0m'
 cur_dir=$(pwd)
 
-check_root(){
-    if [ "$(id -u)" != "0" ]; then
-        echo -e "${yello}[Erro]${plain} 当前非ROOT账号(或没有ROOT权限)，无法继续操作，请更换ROOT账号或使用 ${green}sudo -i${plain} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。"
-        exit 1
-    fi
-}
+# check root
+[[ $EUID -ne 0 ]] && echo -e "${red}错误: ${plain} 请以root权限运行此脚本 \n " && exit 1
 
 check_arch(){
     arch=$(arch)
