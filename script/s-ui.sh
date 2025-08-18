@@ -207,7 +207,7 @@ start(){
         systemctl start $1
         sleep 2
         check_status $1
-        if [[ $? == 0 ]]; then
+        if [[ $? != 0 ]]; then
             LOGI "${1} 已成功启动"
         else
             LOGE "${1} 启动失败, 可能是因为启动时间超过了两秒，请稍后查看日志信息"
