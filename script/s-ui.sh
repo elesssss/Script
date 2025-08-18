@@ -206,8 +206,8 @@ start(){
     else
         systemctl start $1
         sleep 2
-        check_status $1
-        if [[ $? != 0 ]]; then
+        check_status "$1"
+        if [[ $? == 0 ]]; then
             LOGI "${1} 已成功启动"
         else
             LOGE "${1} 启动失败, 可能是因为启动时间超过了两秒，请稍后查看日志信息"
@@ -220,18 +220,18 @@ start(){
 }
 
 stop(){
-    check_status $1
+    check_status "$1"
     if [[ $? == 1 ]]; then
         echo ""
         LOGI "${1} 已停止，无需再次停止!"
     else
-        systemctl stop $1
+        systemctl stop "$1"
         sleep 2
-        check_status
-        if [[ $? != 0 ]]; then
+        check_status "$1"
+        if [[ $? == 1 ]]; then
             LOGI "${1} 成功停止"
         else
-            LOGE "${1} 停止失败, 可能是因为停止时间超过了两秒，请稍后查看日志信息"
+            LOGE "${1} 停止失败，请检查日志: journalctl -u $1"
         fi
     fi
 
