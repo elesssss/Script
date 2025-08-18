@@ -36,10 +36,15 @@ arch(){
     esac
 }
 
-echo "arch: $(arch)"
-
-os_version=""
-os_version=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
+check_release(){
+    if [[ -e /etc/os-release ]]; then
+        . /etc/os-release
+        release=$ID
+    elif [[ -e /usr/lib/os-release ]]; then
+        . /usr/lib/os-release
+        release=$ID
+    fi
+    os_version=$(echo $VERSION_ID | cut -d. -f1,2)
 
 if [[ "${release}" == "arch" ]]; then
     echo "您的系统是 Arch Linux"
@@ -96,7 +101,7 @@ else
     echo "- OpenSUSE Tumbleweed"
     exit 1
 fi
-
+}
 
 install_base(){
     case "${release}" in
