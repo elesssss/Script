@@ -10,19 +10,6 @@ cur_dir=$(pwd)
 # check root
 [[ $EUID -ne 0 ]] && echo -e "${red}ERR: ${plain} 请以root权限运行此脚本 \n " && exit 1
 
-# Check OS and set release variable
-if [[ -f /etc/os-release ]]; then
-    source /etc/os-release
-    release=$ID
-elif [[ -f /usr/lib/os-release ]]; then
-    source /usr/lib/os-release
-    release=$ID
-else
-    echo "无法验证系统操作系统，请联系作者！" >&2
-    exit 1
-fi
-echo "您的系统是: $release"
-
 arch(){
     case "$(uname -m)" in
     x86_64 | x64 | amd64) echo 'amd64' ;;
@@ -46,61 +33,61 @@ check_release(){
     fi
     os_version=$(echo $VERSION_ID | cut -d. -f1,2)
 
-if [[ "${release}" == "arch" ]]; then
-    echo "您的系统是 Arch Linux"
-elif [[ "${release}" == "parch" ]]; then
-    echo "您的系统是 Parch linux"
-elif [[ "${release}" == "manjaro" ]]; then
-    echo "您的系统是 Manjaro"
-elif [[ "${release}" == "armbian" ]]; then
-    echo "您的系统是 Armbian"
-elif [[ "${release}" == "opensuse-tumbleweed" ]]; then
-    echo "您的系统是 OpenSUSE Tumbleweed"
-elif [[ "${release}" == "centos" ]]; then
-    if [[ ${os_version} -lt 9 ]]; then
-        echo -e "${red} 请使用CentOS 9或以上版本!${plain}\n" && exit 1
+    if [[ "${release}" == "arch" ]]; then
+        echo "您的系统是 Arch Linux"
+    elif [[ "${release}" == "parch" ]]; then
+        echo "您的系统是 Parch linux"
+    elif [[ "${release}" == "manjaro" ]]; then
+        echo "您的系统是 Manjaro"
+    elif [[ "${release}" == "armbian" ]]; then
+        echo "您的系统是 Armbian"
+    elif [[ "${release}" == "opensuse-tumbleweed" ]]; then
+        echo "您的系统是 OpenSUSE Tumbleweed"
+    elif [[ "${release}" == "centos" ]]; then
+        if [[ ${os_version} -lt 9 ]]; then
+            echo -e "${red} 请使用CentOS 9或以上版本!${plain}\n" && exit 1
+        fi
+    elif [[ "${release}" == "ubuntu" ]]; then
+        if [[ ${os_version} -lt 22 ]]; then
+            echo -e "${red} 请使用Ubuntu 22或以上版本!${plain}\n" && exit 1
+        fi
+    elif [[ "${release}" == "fedora" ]]; then
+        if [[ ${os_version} -lt 36 ]]; then
+            echo -e "${red} 请使用Fedora 36或以上版本!${plain}\n" && exit 1
+        fi
+    elif [[ "${release}" == "debian" ]]; then
+        if [[ ${os_version} -lt 12 ]]; then
+            echo -e "${red} 请使用Debian 12或以上版本!${plain}\n" && exit 1
+        fi
+    elif [[ "${release}" == "almalinux" ]]; then
+        if [[ ${os_version} -lt 95 ]]; then
+            echo -e "${red} 请使用AlmaLinux 9.5或以上版本!${plain}\n" && exit 1
+        fi
+    elif [[ "${release}" == "rocky" ]]; then
+        if [[ ${os_version} -lt 95 ]]; then
+            echo -e "${red} 请使用Rocky Linux 9.5或以上版本!${plain}\n" && exit 1
+        fi
+    elif [[ "${release}" == "ol" ]]; then
+        if [[ ${os_version} -lt 8 ]]; then
+            echo -e "${red} 请使用Oracle Linux 8或以上版本!${plain}\n" && exit 1
+        fi
+    else
+        echo -e "${red}您的操作系统不支持此脚本.${plain}\n"
+        echo "请确保您正在使用以下受支持的操作系统之一:"
+        echo "- Ubuntu 22.04+"
+        echo "- Debian 12+"
+        echo "- CentOS 9+"
+        echo "- Fedora 36+"
+        echo "- Arch Linux"
+        echo "- Parch Linux"
+        echo "- Manjaro"
+        echo "- Armbian"
+        echo "- AlmaLinux 9.5+"
+        echo "- Rocky Linux 9.5+"
+        echo "- Oracle Linux 8+"
+        echo "- OpenSUSE Tumbleweed"
+        exit 1
     fi
-elif [[ "${release}" == "ubuntu" ]]; then
-    if [[ ${os_version} -lt 22 ]]; then
-        echo -e "${red} 请使用Ubuntu 22或以上版本!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "fedora" ]]; then
-    if [[ ${os_version} -lt 36 ]]; then
-        echo -e "${red} 请使用Fedora 36或以上版本!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "debian" ]]; then
-    if [[ ${os_version} -lt 12 ]]; then
-        echo -e "${red} 请使用Debian 12或以上版本!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "almalinux" ]]; then
-    if [[ ${os_version} -lt 95 ]]; then
-        echo -e "${red} 请使用AlmaLinux 9.5或以上版本!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "rocky" ]]; then
-    if [[ ${os_version} -lt 95 ]]; then
-        echo -e "${red} 请使用Rocky Linux 9.5或以上版本!${plain}\n" && exit 1
-    fi
-elif [[ "${release}" == "ol" ]]; then
-    if [[ ${os_version} -lt 8 ]]; then
-        echo -e "${red} 请使用Oracle Linux 8或以上版本!${plain}\n" && exit 1
-    fi
-else
-    echo -e "${red}您的操作系统不支持此脚本.${plain}\n"
-    echo "请确保您正在使用以下受支持的操作系统之一:"
-    echo "- Ubuntu 22.04+"
-    echo "- Debian 12+"
-    echo "- CentOS 9+"
-    echo "- Fedora 36+"
-    echo "- Arch Linux"
-    echo "- Parch Linux"
-    echo "- Manjaro"
-    echo "- Armbian"
-    echo "- AlmaLinux 9.5+"
-    echo "- Rocky Linux 9.5+"
-    echo "- Oracle Linux 8+"
-    echo "- OpenSUSE Tumbleweed"
-    exit 1
-fi
 }
 
 install_base(){
