@@ -228,7 +228,7 @@ stop(){
         systemctl stop $1
         sleep 2
         check_status
-        if [[ $? == 1 ]]; then
+        if [[ $? != 0 ]]; then
             LOGI "${1} 成功停止"
         else
             LOGE "${1} 停止失败, 可能是因为停止时间超过了两秒，请稍后查看日志信息"
