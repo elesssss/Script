@@ -23,7 +23,7 @@ check_root(){
 }
 
 get_public_ip(){
-    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|eno|esp|enp|venet|veth|vif)'))
+    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|eno|esp|enp|vif)'))
     IP_API=(
         "api64.ipify.org"
         "ip.sb"
