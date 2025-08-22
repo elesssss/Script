@@ -45,8 +45,9 @@ get_public_ip(){
 
 Echo_IP(){
     get_public_ip
-    echo -e "${Info} IPv4 是${Green} ${IPv4}${Nc}, 通过 ${Green}$iface${Nc} 获取"
-    echo -e "${Info} IPv6 是${Green} ${IPv6}${Nc}, 通过 ${Green}$iface${Nc} 获取"
+    echo -e "${Info} 通过 ${Green}$iface${Nc} 获取到以下IP"
+    echo -e "${Info} IPv4 是${Green} ${IPv4}${Nc}"
+    echo -e "${Info} IPv6 是${Green} ${IPv6}${Nc}"
     
     end_time=$(date +%s) # 在脚本结束时记录结束时间
     duration=$((end_time - start_time)) # 计算持续时间
