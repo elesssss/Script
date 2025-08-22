@@ -45,7 +45,7 @@ get_public_ip(){
 
 Echo_IP(){
     get_public_ip
-    echo -e "${Info} 通过 ${Green}$iface${Nc} 获取到以下IP"
+    echo -e "${Info} 通过 ${Green}${iface}${Nc} 获取到以下IP"
     echo -e "${Info} IPv4 是${Green} ${IPv4}${Nc}"
     echo -e "${Info} IPv6 是${Green} ${IPv6}${Nc}"
     
