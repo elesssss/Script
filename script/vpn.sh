@@ -90,12 +90,11 @@ install_base(){
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
             APPS+=("${apps[i]}")
-            CMDS+=("${cmds[i]}")
         fi
     done
     
     if [ ${#APPS[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${CMDS[*]}${Nc} 请稍后..."
+        echo -e "${Tip} 安装依赖列表：${Green}${APPS[*]}${Nc} 请稍后..."
         $updates &>/dev/null
         $installs "${APPS[@]}" &>/dev/null
         $installs ppp &>/dev/null
