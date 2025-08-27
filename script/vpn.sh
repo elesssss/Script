@@ -60,30 +60,30 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd")
+        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd")
+        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd")
+        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd")
+        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd")
+        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("curl" "xl2tpd" "ipsec" "pptpd")
+    cmds=("curl" "xl2tpd" "ipsec" "pptpd" "nft")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
     
@@ -249,7 +249,7 @@ EOF
     done
 
     set_icmp
-    set_iptables
+    set_nftables
 }
 
 set_icmp(){
@@ -270,89 +270,62 @@ set_icmp(){
     sysctl -p &> /dev/null
 }
 
-set_iptables(){
-    [ -f /etc/iptables.vpn.rules ] && cp -pf /etc/iptables.vpn.rules /etc/iptables.vpn.rules.old.`date +%Y%m%d`
-    cat > /etc/iptables.vpn.rules <<EOF
-# Added by L2TP VPN script
-*filter
-:INPUT ACCEPT [0:0]
-:FORWARD ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
--A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
--A INPUT -p icmp -j ACCEPT
--A INPUT -i lo -j ACCEPT
--A INPUT -p tcp --dport 22 -j ACCEPT
--A INPUT -p udp -m multiport --dports 500,4500,${l2tpport},${pptpport} -j ACCEPT
--A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
--A FORWARD -s ${l2tplocip}.0/24 -j ACCEPT
--A FORWARD -s ${pptplocip}.0/24 -j ACCEPT
-COMMIT
-*nat
-:PREROUTING ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
--A POSTROUTING -o ${inface} -j MASQUERADE
-COMMIT
+set_nftables(){
+    [ -f /etc/nftables.conf ] && cp -pf /etc/nftables.conf /etc/nftables.conf.old.`date +%Y%m%d`
+    cat > /etc/nftables.conf <<EOF
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0;
+        ct state established,related accept
+        ip protocol icmp accept
+        iif lo accept
+        udp dport {500,4500,${l2tpport},${pptpport}} accept
+        accept
+    }
+    chain forward {
+        type filter hook forward priority 0;
+        ct state established,related accept
+        ip saddr ${l2tplocip}.0/24 accept
+        ip saddr ${pptplocip}.0/24 accept
+        accept
+    }
+    chain output {
+        type filter hook output priority 0;
+        accept
+    }
+}
+
+table ip nat {
+    chain prerouting {
+        type nat hook prerouting priority 0;
+        accept
+    }
+    chain postrouting {
+        type nat hook postrouting priority 100;
+        oif "${inface}" masquerade
+    }
+    chain output {
+        type nat hook output priority 0;
+        accept
+    }
+}
 EOF
+    systemctl daemon-reload
+    systemctl enable nftables
+    systemctl restart nftables
 }
 
 vpn_start(){
-    # 创建rc.local文件（如果不存在）
-    if [ ! -f /etc/rc.local ]; then
-        cat > /etc/rc.local <<EOF
-#!/bin/sh -e
-#
-# rc.local
-#
-# This script is executed at the end of each multiuser runlevel.
-# Make sure that the script will "exit 0" on success or any other
-# value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-# By default this script does nothing.
-
-echo 1 > /proc/sys/net/ipv4/ip_forward
-/usr/sbin/service ipsec start
-/usr/sbin/service xl2tpd start
-/usr/sbin/service pptpd start
-/sbin/iptables-restore < /etc/iptables.vpn.rules
-
-exit 0
-EOF
-        chmod +x /etc/rc.local
-    else
-        # 如果已存在rc.local，则追加内容
-        sed -i '/^exit 0/d' /etc/rc.local
-        cat >> /etc/rc.local <<EOF
-
-# Added by L2TP VPN script
-echo 1 > /proc/sys/net/ipv4/ip_forward
-/usr/sbin/service ipsec start
-/usr/sbin/service xl2tpd start
-/usr/sbin/service pptpd start
-/sbin/iptables-restore < /etc/iptables.vpn.rules
-
-exit 0
-EOF
-    fi
-
-    cat > /etc/network/if-up.d/iptables <<EOF
-#!/bin/sh
-/sbin/iptables-restore < /etc/iptables.vpn.rules
-EOF
-    chmod +x /etc/network/if-up.d/iptables
-
-    update-rc.d -f xl2tpd defaults
-    # 启用并启动服务
+    systemctl daemon-reload 
     systemctl enable ipsec
     systemctl enable xl2tpd
     systemctl enable pptpd
 
     echo 1 > /proc/sys/net/ipv4/ip_forward
-    /sbin/iptables-restore < /etc/iptables.vpn.rules
-    systemctl daemon-reload 
     systemctl restart ipsec
     systemctl restart xl2tpd
     systemctl restart pptpd
@@ -437,7 +410,6 @@ finally(){
     echo "请稍候..."
     sleep 3
     vpn_start
-    #ipsec verify
     echo
     echo "###############################################################"
     echo "# VPN 安装脚本                                                #"
