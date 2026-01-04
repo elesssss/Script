@@ -73,41 +73,56 @@ check_os() {
 check_pmc() {
     check_os
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
+        check_install="dpkg -s"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "alpine" ]]; then
+        updates="apk update -f"
+        installs="apk add -f"
+        check_install="apk info -e"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
+        check_install="yum list installed"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        check_install="dnf list installed"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
+        updates="pacman -Syu"
+        installs="pacman -Syu --noconfirm"
+        check_install="pacman -Q"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "opensuse-tumbleweed" ]]; then
+        updates="zypper refresh"
+        installs="zypper -q install -y"
+        check_install="zypper search --installed-only"
         apps=("wget" "curl" "tar" "jq")
     fi
-
-    updates=("apt -y update" "yum -y update --skip-broken" "apk update -f" "pacman -Syu" "dnf -y update" "zypper refresh")
-    installs=("apt -y install" "yum -y install" "apk add -f" "pacman -Syu --noconfirm" "dnf -y install" "zypper -q install -y")
 }
 
 install_base() {
     check_pmc
     cmds=("wget" "curl" "tar" "jq")
     echo -e "你的系统是${red} $release $os_version ${plain}"
-    echo
 
-    for i in "${!cmds[@]}"; do
-        if ! which "${cmds[i]}" &>/dev/null; then
-            DEPS+=("${apps[i]}")
+    for g in "${!apps[@]}"; do
+        if ! $check_install "${apps[$g]}" &> /dev/null; then
+            CMDS+=(${cmds[g]})
+            DEPS+=("${apps[$g]}")
         fi
     done
-    
+
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Nc} 请稍后..."
-        ${updates}
-        ${installs} "${DEPS[@]}" 
+        echo -e " 安装依赖列表：${green}${CMDS[@]}${plain} 请稍后..."
+        $updates &> /dev/null
+        $installs "${DEPS[@]}" &> /dev/null
     else
-        echo -e "${Info} 所有依赖已存在，不需要额外安装。"
+        echo -e "${green} 所有依赖已存在，不需要额外安装。${plain}"
     fi
 }
 
@@ -208,7 +223,7 @@ install_x-ui() {
     rm x-ui-linux-${arch}.tar.gz -f
     cd x-ui
     chmod +x x-ui bin/xray-linux-${arch}
-    cp -f x-ui.service.debian /etc/systemd/system/x-ui.service
+    cp -f x-ui.service /etc/systemd/system/
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
