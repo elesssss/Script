@@ -88,8 +88,8 @@ install_base(){
     
     if [ ${#APPS[@]} -gt 0 ]; then
         echo -e "${Tip} 安装依赖列表：${Green}${APPS[*]}${Nc} 请稍后..."
-        $updates
-        $installs "${APPS[@]}"
+        ${updates[int]}
+        ${installs[int]} "${DEPS[@]}" 
         $installs ppp
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
