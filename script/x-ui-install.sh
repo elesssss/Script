@@ -208,7 +208,7 @@ install_x-ui() {
     rm x-ui-linux-${arch}.tar.gz -f
     cd x-ui
     chmod +x x-ui bin/xray-linux-${arch}
-    cp -f x-ui.service /etc/systemd/system/
+    cp -f x-ui.service.debian /etc/systemd/system/
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
