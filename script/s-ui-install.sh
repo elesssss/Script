@@ -132,8 +132,8 @@ install_base(){
     
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo -e "${yellow}[Tip]${plain} 安装依赖列表：${green}${DEPS[*]}${plain} 请稍后..."
-        ${updates[int]}
-        ${installs[int]} "${DEPS[@]}" 
+        ${updates}
+        ${installs} "${DEPS[@]}" 
     else
         echo -e "${yellow}[Tip]${plain} 所有依赖已存在，不需要额外安装。"
     fi
