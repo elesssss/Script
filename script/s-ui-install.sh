@@ -103,26 +103,19 @@ check_release(){
 check_pmc(){
     check_release
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
-        updates="apt update -y"
-        installs="apt install -y"
         apps=("wget" "curl" "tar")
     elif [[ "$release" == "opensuse-tumbleweed" ]]; then
-        updates="zypper refresh"
-        installs="zypper install -y"
         apps=("wget" "curl" "tar")
     elif [[ "$release" == "almalinux" || "$release" == "centos" || "$release" == "rocky" || "$release" == "oracle" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
         apps=("wget" "curl" "tar")
     elif [[ "$release" == "fedora" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
         apps=("wget" "curl" "tar")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch"  ]]; then
-        updates="pacman -Syu"
-        installs="pacman -Syu --noconfirm"
         apps=("wget" "curl" "tar")
     fi
+
+    updates=("apt -y update" "yum -y update --skip-broken" "apk update -f" "pacman -Syu" "dnf -y update" "zypper refresh")
+    installs=("apt -y install" "yum -y install" "apk add -f" "pacman -Syu --noconfirm" "dnf -y install" "zypper -q install -y")
 }
 
 install_base(){
@@ -139,8 +132,8 @@ install_base(){
     
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo -e "${yellow}[Tip]${plain} 安装依赖列表：${green}${DEPS[*]}${plain} 请稍后..."
-        $updates &>/dev/null
-        $installs "${DEPS[@]}" &>/dev/null
+        $updates
+        $installs "${DEPS[@]}"
     else
         echo -e "${yellow}[Tip]${plain} 所有依赖已存在，不需要额外安装。"
     fi
