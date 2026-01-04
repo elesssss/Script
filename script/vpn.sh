@@ -58,20 +58,27 @@ check_release(){
 check_pmc(){
     check_release
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
         apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "alpine" ]]; then
+        updates="apk update -f"
+        installs="apk add -f"
         apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
         check_install="dnf list installed"
         apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "centos" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
         apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     elif [[ "$release" == "fedora" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
         apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
     fi
-
-    updates=("apt -y update" "yum -y update --skip-broken" "apk update -f" "pacman -Sy" "dnf -y update" "zypper refresh")
-    installs=("apt -y install" "yum -y install" "apk add -f" "pacman -S --noconfirm" "dnf -y install" "zypper install -y")
 }
 
 install_base(){
@@ -88,9 +95,9 @@ install_base(){
     
     if [ ${#APPS[@]} -gt 0 ]; then
         echo -e "${Tip} 安装依赖列表：${Green}${APPS[*]}${Nc} 请稍后..."
-        ${updates[int]}
-        ${installs[int]} "${DEPS[@]}" 
-        $installs ppp
+        $updates &>/dev/null
+        $installs "${APPS[@]}" &>/dev/null
+        $installs ppp &>/dev/null
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
