@@ -72,6 +72,9 @@ check_pmc(){
         installs="dnf install -y"
         apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
     fi
+    
+    updates=("apt -y update" "yum -y update --skip-broken" "apk update -f" "pacman -Sy" "dnf -y update" "zypper refresh")
+    installs=("apt -y install" "yum -y install" "apk add -f" "pacman -S --noconfirm" "dnf -y install" "zypper install -y")
 }
 
 install_base(){
@@ -88,8 +91,8 @@ install_base(){
     
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Nc} 请稍后..."
-        $updates &>/dev/null
-        $installs "${DEPS[@]}" &>/dev/null
+        $updates[int]
+        $installs[int] "${DEPS[@]}" 
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
