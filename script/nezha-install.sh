@@ -105,19 +105,21 @@ check_pmc(){
 install_base(){
     check_pmc
     cmds=("wget" "unzip" "grep" "openssl")
-    echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
+    echo -e "${Info} 你的系统是${red} $release $os_version ${Nc}"
     echo
 
-    for g in "${!apps[@]}"; do
-        if ! $check_install "${apps[$g]}" &> /dev/null; then
-            CMDS+=(${cmds[g]})
-            DEPS+=("${apps[$g]}")
+    for i in "${!cmds[@]}"; do
+        if ! which "${cmds[i]}" &>/dev/null; then
+            DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        $updates &> /dev/null
-        $installs "${DEPS[@]}" &> /dev/null
+        echo -e "${Tip} 安装依赖列表：${green}${DEPS[*]}${Nc} 请稍后..."
+        $updates 
+        $installs "${DEPS[@]}" 
+    else
+        echo -e "${Tip} 所有依赖已存在，不需要额外安装。"
     fi
 }
 
