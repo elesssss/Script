@@ -75,32 +75,26 @@ check_pmc() {
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        check_install="dpkg -s"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        check_install="apk info -e"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        check_install="yum list installed"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        check_install="dnf list installed"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
         updates="pacman -Syu"
         installs="pacman -Syu --noconfirm"
-        check_install="pacman -Q"
         apps=("wget" "curl" "tar" "jq")
     elif [[ "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper -q install -y"
-        check_install="zypper search --installed-only"
         apps=("wget" "curl" "tar" "jq")
     fi
 }
@@ -109,18 +103,18 @@ install_base() {
     check_pmc
     cmds=("wget" "curl" "tar" "jq")
     echo -e "你的系统是${red} $release $os_version ${plain}"
+    echo
 
-    for g in "${!apps[@]}"; do
-        if ! $check_install "${apps[$g]}" &> /dev/null; then
-            CMDS+=(${cmds[g]})
-            DEPS+=("${apps[$g]}")
+    for i in "${!cmds[@]}"; do
+        if ! which "${cmds[i]}" &>/dev/null; then
+            DEPS+=("${apps[i]}")
         fi
     done
-
+    
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo -e " 安装依赖列表：${green}${CMDS[@]}${plain} 请稍后..."
-        $updates &> /dev/null
-        $installs "${DEPS[@]}" &> /dev/null
+        $updates 
+        $installs "${DEPS[@]}" 
     else
         echo -e "${green} 所有依赖已存在，不需要额外安装。${plain}"
     fi
