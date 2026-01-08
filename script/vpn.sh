@@ -89,15 +89,15 @@ install_base(){
     
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
-            APPS+=("${apps[i]}")
+            apps+=("${apps[i]}")
         fi
     done
     
-    if [ ${#APPS[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${APPS[*]}${Nc} 请稍后..."
-        $updates &>/dev/null
-        $installs "${APPS[@]}" &>/dev/null
-        $installs ppp &>/dev/null
+    if [ ${#apps[@]} -gt 0 ]; then
+        echo -e "${Tip} 安装依赖列表：${Green}${apps[*]}${Nc} 请稍后..."
+        $updates 
+        $installs "${apps[@]}" 
+        $installs ppp 
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
