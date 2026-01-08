@@ -86,18 +86,17 @@ install_base(){
     cmds=("curl" "xl2tpd" "ipsec" "pptpd" "nft")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
-    
+
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
-            apps+=("${apps[i]}")
+            DEPS+=("${apps[i]}")
         fi
     done
     
-    if [ ${#apps[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${apps[*]}${Nc} 请稍后..."
+    if [ ${#DEPS[@]} -gt 0 ]; then
+        echo -e "${Tip} 安装依赖列表：${Green}${CMDS[@]}${Nc} 请稍后..."
         $updates 
-        $installs "${apps[@]}" 
-        $installs ppp 
+        $installs "${DEPS[@]}" 
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
