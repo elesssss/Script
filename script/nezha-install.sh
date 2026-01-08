@@ -216,7 +216,12 @@ install() {
         NZ_AGENT_URL="https://${GITHUB_URL}/naibahq/agent/releases/download/${_version}/nezha-agent_${os}_${os_arch}.zip"
     fi
 
-    _cmd="wget -T 60 -O /tmp/nezha-agent_${os}_${os_arch}.zip $NZ_AGENT_URL >/dev/null 2>&1"
+    if command -v wget >/dev/null 2>&1; then
+        _cmd="wget --timeout=60 -O /tmp/nezha-agent_${os}_${os_arch}.zip \"$NZ_AGENT_URL\" >/dev/null 2>&1"
+    elif command -v curl >/dev/null 2>&1; then
+        _cmd="curl --max-time 60 -fsSL \"$NZ_AGENT_URL\" -o /tmp/nezha-agent_${os}_${os_arch}.zip >/dev/null 2>&1"
+    fi
+
     if ! eval "$_cmd"; then
         err "Download nezha-agent release failed, check your network connectivity"
         exit 1
