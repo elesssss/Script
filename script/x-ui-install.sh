@@ -62,8 +62,6 @@ check_os() {
             echo -e "${red}你的系统是 $release $os_version${plain}"
             echo -e "${red}请使用 $release 8.0 或更高版本${plain}" && exit 1
         fi
-    elif [[ "$release" == "kali" || "$release" == "arch" || "$release" == "parch" || "$release" == "manjaro" || "$release" == "armbian" || "$release" == "alpine" || "$release" == "opensuse-tumbleweed" ]]; then
-        echo
     else
         echo -e "${red}抱歉，此脚本不支持您的操作系统。"
         exit 1
@@ -217,7 +215,14 @@ install_x-ui() {
     rm x-ui-linux-${arch}.tar.gz -f
     cd x-ui
     chmod +x x-ui bin/xray-linux-${arch}
-    cp -f x-ui.service.debian /etc/systemd/system/x-ui.service
+    case "${release}" in
+        ubuntu | debian | debian | debian | debian | debian | debian | debian | debian | debian | debian | debian)
+            cp -f x-ui/x-ui.service.debian /etc/systemd/system/x-ui.service
+        ;;
+        *)
+            cp -f x-ui/x-ui.service.rhel /etc/systemd/system/x-ui.service
+        ;;
+    esac
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
