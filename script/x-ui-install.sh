@@ -216,7 +216,7 @@ install_x-ui() {
     cd x-ui
     chmod +x x-ui bin/xray-linux-${arch}
     case "${release}" in
-        ubuntu | debian | debian | debian | debian | debian | debian | debian | debian | debian | debian | debian)
+        ubuntu | debian | kali | armbian)
             cp -f x-ui/x-ui.service.debian /etc/systemd/system/x-ui.service
         ;;
         *)
