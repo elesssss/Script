@@ -180,6 +180,7 @@ set_setting(){
     [ -z "$config_subPort" ] || params="$params -subPort $config_subPort"
     [ -z "$config_subPath" ] || params="$params -subPath $config_subPath"
     /usr/local/s-ui/sui setting ${params}
+    systemctl restart s-ui
     before_show_menu
 }
 
