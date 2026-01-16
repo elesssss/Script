@@ -217,10 +217,10 @@ install_x-ui() {
     chmod +x x-ui bin/xray-linux-${arch}
     case "${release}" in
         ubuntu | debian | kali | armbian)
-            cp -f x-ui/x-ui.service.debian /etc/systemd/system/x-ui.service
+            cp -f x-ui.service.debian /etc/systemd/system/x-ui.service
         ;;
         *)
-            cp -f x-ui/x-ui.service.rhel /etc/systemd/system/x-ui.service
+            cp -f x-ui.service.rhel /etc/systemd/system/x-ui.service
         ;;
     esac
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
