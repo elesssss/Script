@@ -1,22 +1,27 @@
 #!/bin/bash
 
-Red="\033[31m" # 红色
+# 颜色定义
 Green="\033[32m" # 绿色
-Yellow="\033[33m" # 黄色
-Blue="\033[34m" # 蓝色
-Nc="\033[0m" # 重置颜色
-Red_globa="\033[41;37m" # 红底白字
-Green_globa="\033[42;37m" # 绿底白字
-Yellow_globa="\033[43;37m" # 黄底白字
-Blue_globa="\033[44;37m" # 蓝底白字
-Info="${Green}[信息]${Nc}"
-Error="${Red}[错误]${Nc}"
-Tip="${Yellow}[提示]${Nc}"
+Red="\033[31m" # 红色
+Yellow="\033[0;33m" # 黄色
+Blue="\033[0;34m" # 蓝色
+Plain="\033[0m" # 重置颜色
+Green_background="\033[42;37m" # 绿底
+Red_background="\033[41;37m" # 红底
+Yellow_globa="\033[43;37m" # 黄底
+Blue_globa="\033[44;37m" # 蓝底
+
+# 状态提示
+Info="${Green}[信息]${Plain}"
+Error="${Red}[错误]${Plain}"
+Warning="${Yellow}[警告]${Plain}"
+Success="${Green}[成功]${Plain}"
+Tip="${Yellow}[提示]${Plain}"
 
 # 检查是否为root用户
 check_root(){
     if [ "$(id -u)" != "0" ]; then
-        echo -e "${Error} 当前非ROOT账号(或没有ROOT权限)，无法继续操作，请更换ROOT账号或使用 ${Green_globa}sudo -i${Nc} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。"
+        echo -e "${Error} 当前非ROOT账号(或没有ROOT权限)，无法继续操作，请更换ROOT账号或使用 ${Green_globa}sudo -i${Plain} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。"
         exit 1
     fi
 }
@@ -36,15 +41,15 @@ check_release(){
     elif [[ ! "${release}" =~ ^(kali|centos|ubuntu|fedora|debian|almalinux|rocky|alpine)$ ]]; then
         echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
         echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
-        echo -e "-${Red} Ubuntu ${Nc}"
-        echo -e "-${Red} Debian ${Nc}"
-        echo -e "-${Red} CentOS ${Nc}"
-        echo -e "-${Red} Fedora ${Nc}"
-        echo -e "-${Red} Kali ${Nc}"
-        echo -e "-${Red} AlmaLinux ${Nc}"
-        echo -e "-${Red} Rocky Linux ${Nc}"
-        echo -e "-${Red} Oracle Linux ${Nc}"
-        echo -e "-${Red} Alpine Linux ${Nc}"
+        echo -e "-${Red} Ubuntu ${Plain}"
+        echo -e "-${Red} Debian ${Plain}"
+        echo -e "-${Red} CentOS ${Plain}"
+        echo -e "-${Red} Fedora ${Plain}"
+        echo -e "-${Red} Kali ${Plain}"
+        echo -e "-${Red} AlmaLinux ${Plain}"
+        echo -e "-${Red} Rocky Linux ${Plain}"
+        echo -e "-${Red} Oracle Linux ${Plain}"
+        echo -e "-${Red} Alpine Linux ${Plain}"
         exit 1
     fi
 }
@@ -77,7 +82,7 @@ check_pmc(){
 install_base(){
     check_pmc
     cmds=("openssl" "python3" "xxd" "ps" "ip")
-    echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
+    echo -e "${Info} 你的系统是${Red} $release $os_version ${Plain}"
     echo
 
     for i in "${!cmds[@]}"; do
@@ -87,7 +92,7 @@ install_base(){
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${yellow}[Tip]安装依赖列表：${Green}${DEPS[*]}${Nc} 请稍后..."
+        echo -e "${yellow}[Tip]安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
     else
