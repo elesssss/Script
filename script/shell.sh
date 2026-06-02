@@ -87,15 +87,11 @@ install_base(){
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${CMDS[@]}${Nc} 请稍后..."
+        echo -e "${yellow}[Tip]安装依赖列表：${Green}${DEPS[*]}${Nc} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
-    fi
-
-    if [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
-        ln -sf /usr/bin/python3.11 /usr/bin/python3
     fi
 }
 
