@@ -60,43 +60,44 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
+        apps=("curl" "xl2tpd" "strongswan" "nftables")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
+        apps=("curl" "xl2tpd" "strongswan" "nftables")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         check_install="dnf list installed"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
+        apps=("curl" "xl2tpd" "strongswan" "nftables")
     elif [[ "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
+        apps=("curl" "xl2tpd" "strongswan" "nftables")
     elif [[ "$release" == "fedora" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("curl" "xl2tpd" "strongswan" "pptpd" "nftables")
+        apps=("curl" "xl2tpd" "strongswan" "nftables")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("curl" "xl2tpd" "ipsec" "pptpd" "nft")
+    cmds=("curl" "xl2tpd" "ipsec" "nft")
     echo -e "${Info} 你的系统是${Red} $release $os_version ${Nc}"
     echo
-
+    
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
-            DEPS+=("${apps[i]}")
+            APPS+=("${apps[i]}")
         fi
     done
     
-    if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Tip} 安装依赖列表：${Green}${CMDS[@]}${Nc} 请稍后..."
+    if [ ${#APPS[@]} -gt 0 ]; then
+        echo -e "${Tip} 安装依赖列表：${Green}${APPS[*]}${Nc} 请稍后..."
         $updates 
-        $installs "${DEPS[@]}" 
+        $installs "${APPS[@]}"
+        $installs ppp &>/dev/null
     else
         echo -e "${Info} 所有依赖已存在，不需要额外安装。"
     fi
@@ -114,8 +115,9 @@ rand(){
 }
 
 get_public_ip(){
-    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|enp)'))
+    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|eno|esp|enp|vif)'))
     IP_API=(
+        "ip.gs"
         "api64.ipify.org"
         "ip.sb"
         "ifconfig.me"
@@ -193,7 +195,7 @@ EOF
 ipcp-accept-local
 ipcp-accept-remote
 require-mschap-v2
-ms-dns 8.8.8.8
+ms-dns 1.1.1.1
 ms-dns 114.114.114.114
 noccp
 auth
@@ -208,32 +210,6 @@ connect-delay 5000
 
 EOF
 
-    cat > /etc/pptpd.conf<<EOF
-option /etc/ppp/pptpd-options
-debug
-localip ${pptplocip}.1
-remoteip ${pptplocip}.11-255
-
-EOF
-
-    cat > /etc/ppp/pptpd-options<<EOF
-name pptpd
-refuse-pap
-refuse-chap
-refuse-mschap
-require-mschap-v2
-require-mppe-128
-ms-dns 8.8.8.8
-ms-dns 114.114.114.114
-proxyarp
-lock
-nobsdcomp
-novj
-novjccomp
-nologfd
-
-EOF
-
     cat > /etc/ppp/chap-secrets <<EOF
 # Secrets for authentication using CHAP
 # client    server    secret    IP addresses
@@ -241,9 +217,6 @@ EOF
 
     for num in $(seq 11 255); do
         echo "${l2tpuser}${num}    l2tpd    ${l2tppass}${num}    ${l2tplocip}.${num}" >> /etc/ppp/chap-secrets
-    done
-    for num in $(seq 11 255); do
-        echo "${pptpuser}${num}    pptpd    ${pptppass}${num}    ${pptplocip}.${num}" >> /etc/ppp/chap-secrets
     done
 
     set_icmp
@@ -266,6 +239,8 @@ set_icmp(){
     done
 
     sysctl -p &> /dev/null
+    ip rule add fwmark 1 table 100
+    ip route add local 0.0.0.0/0 dev lo table 100
 }
 
 set_nftables(){
@@ -275,20 +250,32 @@ set_nftables(){
 
 flush ruleset
 
+table ip mangle {
+    chain singbox {
+        ip daddr { 0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 } return
+        ip saddr 10.10.10.0/24 tcp dport != ${tproxyport} tproxy to :${tproxyport} meta mark set 1 accept
+        ip saddr 10.10.10.0/24 udp dport != ${tproxyport} tproxy to :${tproxyport} meta mark set 1 accept
+    }
+    
+    chain prerouting {
+        type filter hook prerouting priority mangle; policy accept;
+        jump singbox
+    }
+}
+
 table inet filter {
     chain input {
         type filter hook input priority 0;
         ct state established,related accept
         ip protocol icmp accept
         iif lo accept
-        udp dport {500,4500,${l2tpport},${pptpport}} accept
+        udp dport {500,4500,${l2tpport}} accept
         accept
     }
     chain forward {
         type filter hook forward priority 0;
         ct state established,related accept
         ip saddr ${l2tplocip}.0/24 accept
-        ip saddr ${pptplocip}.0/24 accept
         accept
     }
     chain output {
@@ -321,12 +308,10 @@ vpn_start(){
     systemctl daemon-reload 
     systemctl enable ipsec
     systemctl enable xl2tpd
-    systemctl enable pptpd
 
     echo 1 > /proc/sys/net/ipv4/ip_forward
     systemctl restart ipsec
     systemctl restart xl2tpd
-    systemctl restart pptpd
 }
 
 set_conf(){
@@ -335,72 +320,51 @@ set_conf(){
     echo -e "${Tip} 请输入L2tpIP范围:"
     read -p "(默认范围: 10.10.10):" l2tplocip
     [ -z "${l2tplocip}" ] && l2tplocip="10.10.10"
-
+    echo
     echo -e "${Tip} 请输入L2tp端口:"
-    read -p "(默认端口: 1999):" l2tpport
-    [ -z "${l2tpport}" ] && l2tpport=1999
-
+    read -p "(默认端口: 1701):" l2tpport
+    [ -z "${l2tpport}" ] && l2tpport=1701
+    echo
     # 端口范围检查
     while ! [[ "$l2tpport" =~ ^[0-9]+$ ]] || [ "$l2tpport" -lt 1000 ] || [ "$l2tpport" -gt 65535 ]; do
         echo -e "${Error} 端口必须为1000-65535之间的数字"
         read -p "请重新输入端口 (1000-65535):" l2tpport
-        [ -z "${l2tpport}" ] && l2tpport=1999
+        [ -z "${l2tpport}" ] && l2tpport=1701
     done
-
+    echo
     l2tpuser=$(rand 5)
     echo -e "${Tip} 请输入L2tp用户名:"
     read -p "(默认用户名: ${l2tpuser}):" tmpl2tpuser
     [ -n "${tmpl2tpuser}" ] && l2tpuser="${tmpl2tpuser}"
-
+    echo
     l2tppass=$(rand 7)
     echo -e "${Tip} 请输入 ${l2tpuser} 的密码:"
     read -p "(默认密码: ${l2tppass}):" tmpl2tppass
     [ -n "${tmpl2tppass}" ] && l2tppass="${tmpl2tppass}"
-
+    echo
     l2tppsk=$(rand 20)
     echo -e "${Tip} 请输入L2tp PSK密钥:"
     read -p "(默认PSK: ${l2tppsk}):" tmppsk
     [ -n "${tmppsk}" ] && l2tppsk="${tmppsk}"
-    
-    # Pptp
-    echo -e "${Tip} 请输入Pptp IP范围:"
-    read -p "(默认范围: 192.168.30):" pptplocip
-    [ -z "${pptplocip}" ] && pptplocip="192.168.30"
-
-    echo -e "${Tip} 请输入Pptp端口:"
-    read -p "(默认端口: 1723):" pptpport
-    [ -z "${pptpport}" ] && pptpport=1723
-
+    echo
+    echo -e "${Tip} 请输入 tproxy 端口:"
+    read -p "(默认端口: 12345):" tproxyport
+    [ -z "${tproxyport}" ] && tproxyport=12345
+    echo
     # 端口范围检查
-    while ! [[ "$pptpport" =~ ^[0-9]+$ ]] || [ "$pptpport" -lt 1000 ] || [ "$pptpport" -gt 65535 ]; do
+    while ! [[ "$tproxyport" =~ ^[0-9]+$ ]] || [ "$tproxyport" -lt 10000 ] || [ "$tproxyport" -gt 65535 ]; do
         echo -e "${Error} 端口必须为1000-65535之间的数字"
-        read -p "请重新输入端口 (1000-65535):" l2tpport
-        [ -z "${pptpport}" ] && pptpport=1723
+        read -p "请重新输入端口 (10000-65535):" tproxyport
+        [ -z "${tproxyport}" ] && tproxyport=12345
     done
-
-    pptpuser=$(rand 5)
-    echo -e "${Tip} 请输入Pptp用户名:"
-    read -p "(默认用户名: ${pptpuser}):" tmppptpuser
-    [ -n "${tmppptpuser}" ] && pptpuser="${tmppptpuser}"
-
-    pptppass=$(rand 7)
-    echo -e "${Tip} 请输入 ${pptpuser} 的密码:"
-    read -p "(默认密码: ${pptppass}):" tmppptppass
-    [ -n "${tmppptppass}" ] && pptppass="${tmppptppass}"
-
     echo
-    echo -e "${Info} L2tp服务器本地IP: ${Green}${l2tplocip}.1${Nc}"
-    echo -e "${Info} L2tp客户端IP范围: ${Green}${l2tplocip}.11-${l2tplocip}.255${Nc}"
-    echo -e "${Info} L2tp端口    : ${Green}${l2tpport}${Nc}"
-    echo -e "${Info} L2tp用户名  : ${Green}${l2tpuser}${Nc}"
-    echo -e "${Info} L2tp密码    : ${Green}${l2tppass}${Nc}"
-    echo -e "${Info} L2tpPSK密钥 : ${Green}${l2tppsk}${Nc}"
-    echo
-    echo -e "${Info} Pptp服务器本地IP: ${Green}${pptplocip}.1${Nc}"
-    echo -e "${Info} Pptp客户端IP范围: ${Green}${pptplocip}.11-${pptplocip}.255${Nc}"
-    echo -e "${Info} Pttp端口    : ${Green}${pptpport}${Nc}"
-    echo -e "${Info} Pttp用户名  : ${Green}${pptpuser}${Nc}"
-    echo -e "${Info} Pttp密码    : ${Green}${pptppass}${Nc}"
+    echo -e "${Info} L2tp 服务器本地IP: ${Green}${l2tplocip}.1${Nc}"
+    echo -e "${Info} L2tp 客户端IP范围: ${Green}${l2tplocip}.11-${l2tplocip}.255${Nc}"
+    echo -e "${Info} L2tp 端口    : ${Green}${l2tpport}${Nc}"
+    echo -e "${Info} L2tp 用户名  : ${Green}${l2tpuser}${Nc}"
+    echo -e "${Info} L2tp 密码    : ${Green}${l2tppass}${Nc}"
+    echo -e "${Info} L2tp PSK密钥 : ${Green}${l2tppsk}${Nc}"
+    echo -e "${Info} 透明代理端口  : ${Green}${tproxyport}${Nc}"
     echo
 }
 
@@ -417,14 +381,11 @@ finally(){
     echo
     echo -e "${Info} 服务器IP: ${Green}${IPv4}${Nc}"
     echo
-    echo -e "${Info} L2tp端口    : ${Green}${l2tpport}${Nc}"
-    echo -e "${Info} L2tp用户名  : ${Green}${l2tpuser}${Nc}"
-    echo -e "${Info} L2tp密码    : ${Green}${l2tppass}${Nc}"
-    echo -e "${Info} L2tpPSK密钥 : ${Green}${l2tppsk}${Nc}"
-    echo
-    echo -e "${Info} Pttp端口    : ${Green}${pptpport}${Nc}"
-    echo -e "${Info} Pttp用户名  : ${Green}${pptpuser}${Nc}"
-    echo -e "${Info} Pttp密码    : ${Green}${pptppass}${Nc}"
+    echo -e "${Info} L2tp 端口    : ${Green}${l2tpport}${Nc}"
+    echo -e "${Info} L2tp 用户名  : ${Green}${l2tpuser}${Nc}"
+    echo -e "${Info} L2tp 密码    : ${Green}${l2tppass}${Nc}"
+    echo -e "${Info} L2tp PSK密钥 : ${Green}${l2tppsk}${Nc}"
+    echo -e "${Info} 透明代理端口  : ${Green}${tproxyport}${Nc}"
     echo
     echo -e "${Info} 完整的用户配置请查看 ${Green}/etc/ppp/chap-secrets${Nc} 文件"
     echo
