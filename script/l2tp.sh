@@ -224,7 +224,7 @@ flush ruleset
 
 table ip mangle {
     chain singbox {
-        ip daddr { 0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 } return
+        ip daddr { 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 } return
         meta l4proto icmp return
         ip saddr ${l2tplocip}.0/24 meta l4proto tcp tproxy to :${tproxyport} meta mark set 0x39 accept
         ip saddr ${l2tplocip}.0/24 meta l4proto udp tproxy to :${tproxyport} meta mark set 0x39 accept
