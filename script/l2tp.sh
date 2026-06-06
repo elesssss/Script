@@ -39,44 +39,18 @@ check_release(){
 
     if [[ "${release}" == "ol" ]]; then
         release=oracle
-    elif [[ ! "${release}" =~ ^(kali|centos|ubuntu|fedora|debian|almalinux|rocky|alpine)$ ]]; then
+    elif [[ ! "${release}" == "ubuntu" ]]; then
         echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
-        echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
-        echo -e "-${Red} Ubuntu ${Nc}"
-        echo -e "-${Red} Debian ${Nc}"
-        echo -e "-${Red} CentOS ${Nc}"
-        echo -e "-${Red} Fedora ${Nc}"
-        echo -e "-${Red} Kali ${Nc}"
-        echo -e "-${Red} AlmaLinux ${Nc}"
-        echo -e "-${Red} Rocky Linux ${Nc}"
-        echo -e "-${Red} Oracle Linux ${Nc}"
-        echo -e "-${Red} Alpine Linux ${Nc}"
+        echo -e "${Info} 请确保您使用的是 ${Red}ubuntu${Nc} 系统"
         exit 1
     fi
 }
 
 check_pmc(){
     check_release
-    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+    if [[ "$release" == "ubuntu" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("curl" "xl2tpd" "strongswan" "nftables")
-    elif [[ "$release" == "alpine" ]]; then
-        updates="apk update -f"
-        installs="apk add -f"
-        apps=("curl" "xl2tpd" "strongswan" "nftables")
-    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
-        check_install="dnf list installed"
-        apps=("curl" "xl2tpd" "strongswan" "nftables")
-    elif [[ "$release" == "centos" ]]; then
-        updates="yum update -y"
-        installs="yum install -y"
-        apps=("curl" "xl2tpd" "strongswan" "nftables")
-    elif [[ "$release" == "fedora" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
         apps=("curl" "xl2tpd" "strongswan" "nftables")
     fi
 }
@@ -239,7 +213,7 @@ set_icmp(){
     done
 
     sysctl -p &> /dev/null
-    ip rule add fwmark 1 table 100
+    ip rule add fwmark 0x39 lookup 100
     ip route add local 0.0.0.0/0 dev lo table 100
 }
 
@@ -253,13 +227,30 @@ flush ruleset
 table ip mangle {
     chain singbox {
         ip daddr { 0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 } return
-        ip saddr 10.10.10.0/24 tcp dport != ${tproxyport} tproxy to :${tproxyport} meta mark set 1 accept
-        ip saddr 10.10.10.0/24 udp dport != ${tproxyport} tproxy to :${tproxyport} meta mark set 1 accept
+        meta l4proto icmp return
+        ip saddr ${l2tplocip}.0/24 meta l4proto tcp tproxy to :${tproxyport} meta mark set 0x39 accept
+        ip saddr ${l2tplocip}.0/24 meta l4proto udp tproxy to :${tproxyport} meta mark set 0x39 accept
     }
-    
+
     chain prerouting {
         type filter hook prerouting priority mangle; policy accept;
-        jump singbox
+        iifname "ppp*" jump singbox
+    }
+
+    chain input {
+        type filter hook input priority mangle; policy accept;
+        iifname "ppp*" meta l4proto tcp tcp flags & (syn|rst) == syn counter tcp option maxseg size set 1200
+    }
+
+    chain forward {
+        type filter hook forward priority mangle; policy accept;
+        iifname "ppp*" meta l4proto tcp tcp flags & (syn|rst) == syn counter tcp option maxseg size set 1200
+        oifname "ppp*" meta l4proto tcp tcp flags & (syn|rst) == syn counter tcp option maxseg size set 1200
+    }
+
+    chain output {
+        type route hook output priority mangle; policy accept;
+        oifname "ppp*" meta l4proto tcp tcp flags & (syn|rst) == syn counter tcp option maxseg size set 1200
     }
 }
 
@@ -269,15 +260,17 @@ table inet filter {
         ct state established,related accept
         ip protocol icmp accept
         iif lo accept
-        udp dport {500,4500,${l2tpport}} accept
+        udp dport { 500, 4500, ${l2tpport} } accept
         accept
     }
+
     chain forward {
         type filter hook forward priority 0;
         ct state established,related accept
         ip saddr ${l2tplocip}.0/24 accept
         accept
     }
+
     chain output {
         type filter hook output priority 0;
         accept
@@ -289,10 +282,12 @@ table ip nat {
         type nat hook prerouting priority 0;
         accept
     }
+
     chain postrouting {
         type nat hook postrouting priority 100;
         oif "${inface}" masquerade
     }
+
     chain output {
         type nat hook output priority 0;
         accept
