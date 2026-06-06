@@ -37,9 +37,7 @@ check_release(){
     fi
     os_version=$(echo $VERSION_ID | cut -d. -f1,2)
 
-    if [[ "${release}" == "ol" ]]; then
-        release=oracle
-    elif [[ ! "${release}" == "ubuntu" ]]; then
+    if [[ ! "${release}" == "ubuntu" ]]; then
         echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
         echo -e "${Info} 请确保您使用的是 ${Red}ubuntu${Nc} 系统"
         exit 1
