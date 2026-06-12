@@ -120,11 +120,9 @@ uninstall(){
     rm /etc/systemd/system/s-ui.service -f
     systemctl daemon-reload
     systemctl reset-failed
-    rm /etc/s-ui/ -rf
-    rm /usr/local/s-ui/ -rf
-
+    rm -rf /etc/s-ui/ /usr/local/s-ui /usr/local/s-ui/
     echo ""
-    echo -e "已成功卸载。如果您想删除此脚本，请在退出脚本后运行 ${green}rm /usr/local/s-ui -f${plain} 命令将其删除."
+    echo -e "已成功卸载."
     echo ""
 
     if [[ $# == 0 ]]; then
