@@ -191,7 +191,7 @@ config_after_install(){
         if [[ ! -f "/usr/local/s-ui/db/s-ui.db" ]]; then
             local usernameTemp=admin
             local passwordTemp=admin
-            local portTemp=2095
+            local portTemp=$(shuf -i10000-65000 -n1)
             local pathTemp=app
             local subPortTemp=2094
             local subPathTemp=sub
