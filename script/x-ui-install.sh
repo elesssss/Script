@@ -1,107 +1,87 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[0;33m'
-plain='\033[0m'
+# 颜色定义
+Green="\033[32m"        # 绿色
+Red="\033[31m"          # 红色
+Yellow="\033[0;33m"     # 黄色
+Blue="\033[0;34m"       # 蓝色
+Plain="\033[0m"         # 重置颜色
+Green_background="\033[42;37m"  # 绿底
+Red_background="\033[41;37m"    # 红底
+Yellow_globa="\033[43;37m"      # 黄底
+Blue_globa="\033[44;37m"        # 蓝底
 
-# check root
-[[ $EUID -ne 0 ]] && echo -e "${red}错误：${plain} 必须使用root用户运行此脚本！\n" && exit 1
+# 状态提示
+Info="${Green}[信息]${Plain}"
+Error="${Red}[错误]${Plain}"
+Warning="${Yellow}[警告]${Plain}"
+Success="${Green}[成功]${Plain}"
+Tip="${Yellow}[提示]${Plain}"
 
-# check os
-check_os() {
+cur_dir=$(pwd)
+
+xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
+xui_service="${XUI_SERVICE:=/etc/systemd/system}"
+
+arch(){
+    case "$(uname -m)" in
+        x86_64 | x64 | amd64) echo 'amd64' ;;
+        i*86 | x86) echo '386' ;;
+        armv8* | armv8 | arm64 | aarch64) echo 'arm64' ;;
+        armv7* | armv7 | arm) echo 'armv7' ;;
+        armv6* | armv6) echo 'armv6' ;;
+        armv5* | armv5) echo 'armv5' ;;
+        s390x) echo 's390x' ;;
+        *) echo -e "${Error} 不支持的 CPU 架构！ ${Plain}" && exit 1 ;;
+    esac
+}
+
+check_os(){
     if [[ -e /etc/os-release ]]; then
         . /etc/os-release
         release=$ID
     elif [[ -e /usr/lib/os-release ]]; then
         . /usr/lib/os-release
         release=$ID
-    fi
-
-    os_version="${VERSION_ID%%.*}"  # 取整数部分，避免错误
-
-    # 检查最低系统要求
-    if [[ "$release" == "ol" ]]; then
-        release="oracle"
-        if [[ "$os_version" -lt 8 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 8 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "centos" ]]; then
-        if [[ "$os_version" -lt 7 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 7 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "fedora" ]]; then
-        if [[ "$os_version" -lt 36 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 36 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "openEuler" ]]; then
-        if [[ "$os_version" -lt 2203 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 22.03 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "ubuntu" ]]; then
-        if [[ "$os_version" -lt 20 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 20.04 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "amzn" ]]; then
-        if [[ "$os_version" != "2023" ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 2023 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "debian" ]]; then
-        if [[ "$os_version" -lt 10 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 10 或更高版本${plain}" && exit 1
-        fi
-    elif [[ "$release" == "almalinux" || "$release" == "rocky" ]]; then
-        if [[ "$os_version" -lt 8 ]]; then
-            echo -e "${red}你的系统是 $release $os_version${plain}"
-            echo -e "${red}请使用 $release 8.0 或更高版本${plain}" && exit 1
-        fi
     else
-        echo -e "${red}抱歉，此脚本不支持您的操作系统。"
+        echo -e "${Error} 检测系统版本失败，请联系作者！" >&2
         exit 1
     fi
+    echo -e "${Info} 当前系统版本: ${Green}$release${Plain}"
 }
 
-check_pmc() {
+check_pmc(){
     check_os
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("wget" "curl" "tar" "jq")
+        apps=("curl" "tar" "jq")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        apps=("wget" "curl" "tar" "jq")
+        apps=("curl" "tar" "jq")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        apps=("wget" "curl" "tar" "jq")
+        apps=("curl" "tar" "jq")
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("wget" "curl" "tar" "jq")
+        apps=("curl" "tar" "jq")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
         updates="pacman -Syu"
         installs="pacman -Syu --noconfirm"
-        apps=("wget" "curl" "tar" "jq")
+        apps=("curl" "tar" "jq")
     elif [[ "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper -q install -y"
-        apps=("wget" "curl" "tar" "jq")
+        apps=("curl" "tar" "jq")
     fi
 }
 
-install_base() {
+install_base(){
     check_pmc
-    cmds=("wget" "curl" "tar" "jq")
-    echo -e "你的系统是${red} $release $os_version ${plain}"
-    echo
+    cmds=("curl" "tar" "jq")
 
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
@@ -110,152 +90,373 @@ install_base() {
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e " 安装依赖列表：${green}${CMDS[@]}${plain} 请稍后..."
+        echo -e "${Info} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
+        echo -e "${Success} 依赖安装完成！${Plain}"
     else
-        echo -e "${green} 所有依赖已存在，不需要额外安装。${plain}"
+        echo -e "${Success} 所有依赖已存在，不需要额外安装。${Plain}"
     fi
 }
 
-check_arch() {
-    arch=$(arch)
-    if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
-        arch="amd64"
-    elif [[ $arch == i*86 || $arch == "x86" ]]; then
-        arch="386"
-    elif [[ $arch == "aarch64" || $arch == "arm64" || $arch == armv8* ]]; then
-        arch="arm64"
-    elif [[ $arch == "armv7l" || $arch == "armv7" || $arch == arm* ]]; then
-        arch="armv7"
-    elif [[ $arch == "armv6l" || $arch == "armv6" ]]; then
-        arch="armv6"
-    elif [[ $arch == "armv5l" || $arch == "armv5" ]]; then
-        arch="armv5"
-    elif [[ $arch == "s390x" ]]; then
-        arch="s390x"
+gen_random_string(){
+    local length="$1"
+    openssl rand -base64 $((length * 2)) \
+        | tr -dc 'a-zA-Z0-9' \
+        | head -c "$length"
+}
+
+config_after_install(){
+    echo -e "${Info} 正在配置面板设置..."
+    
+    local existing_hasDefaultCredential=$(${xui_folder}/x-ui setting -show true | grep -Eo 'hasDefaultCredential: .+' | awk '{print $2}')
+    local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
+    local existing_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
+    
+    local URL_lists=(
+        "https://api4.ipify.org"
+        "https://ipv4.icanhazip.com"
+        "https://v4.api.ipinfo.io/ip"
+        "https://ipv4.myexternalip.com/raw"
+        "https://4.ident.me"
+        "https://check-host.net/ip"
+    )
+    local server_ip=""
+    
+    echo -e "${Info} 正在获取服务器公网 IP..."
+    for ip_address in "${URL_lists[@]}"; do
+        local response=$(curl -s -w "\n%{http_code}" --max-time 3 "${ip_address}" 2> /dev/null)
+        local http_code=$(echo "$response" | tail -n1)
+        local ip_result=$(echo "$response" | head -n-1 | tr -d '[:space:]"')
+        if [[ "${http_code}" == "200" && "${ip_result}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            server_ip="${ip_result}"
+            echo -e "${Success} 检测到服务器 IP: ${Green}${server_ip}${Plain}"
+            break
+        fi
+    done
+
+    if [[ -z "$server_ip" ]]; then
+        echo -e "${Warning} 无法从任何服务商自动检测到服务器 IP。${Plain}"
+        while [[ -z "$server_ip" ]]; do
+            read -rp "$(echo -e "${Tip} 请输入服务器的公网 IPv4 地址: ")" server_ip
+            server_ip="${server_ip// /}"
+            if [[ ! "$server_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo -e "${Error} 无效的 IPv4 地址，请重新输入。${Plain}"
+                server_ip=""
+            fi
+        done
+    fi
+
+    if [[ ${#existing_webBasePath} -lt 4 ]]; then
+        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
+            local config_webBasePath=$(gen_random_string 18)
+            local config_username=$(gen_random_string 10)
+            local config_password=$(gen_random_string 10)
+
+            echo ""
+            local db_label="${Green}SQLite${Plain} (/etc/x-ui/x-ui.db)"
+
+            read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
+            if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
+                while true; do
+                    read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
+                    if [[ "$config_port" =~ ^[0-9]+$ ]] && [ "$config_port" -ge 10000 ] && [ "$config_port" -le 65535 ]; then
+                        echo -e "${Info} 面板端口: ${Green}${config_port}${Plain}"
+                        break
+                    else
+                        echo -e "${Error} 无效端口，请输入 10000-65535 之间的数字。${Plain}"
+                    fi
+                done
+            else
+                local config_port=$(shuf -i 10000-65535 -n 1)
+                echo -e "${Info} 已生成随机端口: ${Green}${config_port}${Plain}"
+            fi
+
+            echo -e "${Info} 正在应用面板配置..."
+            ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
+
+            # 强制使用 HTTP - 清除任何已存在的证书设置
+            ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
+
+            # 确保面板监听所有接口
+            ${xui_folder}/x-ui setting -listenIP "0.0.0.0" > /dev/null 2>&1
+
+            # Retrieve the API token for display
+            local config_apiToken=$(${xui_folder}/x-ui setting -getApiToken true | grep -Eo 'apiToken: .+' | awk '{print $2}')
+
+            # Display final credentials and access information
+            echo ""
+            echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+            echo -e "${Green}                    面板安装完成！                      ${Plain}"
+            echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+            echo -e "${Green}用户名:     ${Plain}${config_username}"
+            echo -e "${Green}密码:       ${Plain}${config_password}"
+            echo -e "${Green}端口:       ${Plain}${config_port}"
+            echo -e "${Green}Web根路径:  ${Plain}${config_webBasePath}"
+            echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_webBasePath}${Plain}"
+            echo -e "${Green}API Token:  ${Plain}${config_apiToken}"
+            echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+            echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+            echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+            echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}x-ui${Plain} 命令。${Plain}"
+        else
+            local config_webBasePath=$(gen_random_string 18)
+            echo -e "${Warning} WebBasePath 缺失或太短，正在生成新路径...${Plain}"
+            ${xui_folder}/x-ui setting -webBasePath "${config_webBasePath}"
+            echo -e "${Success} 新的 Web根路径: ${Green}${config_webBasePath}${Plain}"
+
+            # 确保清除任何现有证书
+            ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
+            echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${config_webBasePath}${Plain}"
+        fi
     else
-        echo -e "${red}检测到您的架构不支持，请联系作者！${plain}"
+        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
+            local config_username=$(gen_random_string 10)
+            local config_password=$(gen_random_string 10)
+
+            echo -e "${Warning} 检测到默认凭据，正在进行安全更新...${Plain}"
+            ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}"
+            echo -e "${Success} 已生成新的随机登录凭据：${Plain}"
+            echo -e "${Green}###############################################${Plain}"
+            echo -e "${Green}用户名: ${Plain}${config_username}"
+            echo -e "${Green}密码:   ${Plain}${config_password}"
+            echo -e "${Green}###############################################${Plain}"
+        else
+            echo -e "${Success} 用户名、密码和 WebBasePath 已正确设置。${Plain}"
+        fi
+
+        # 确保清除任何现有证书
+        ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
+        echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${existing_webBasePath}${Plain}"
+    fi
+
+    #echo -e "${Info} 正在执行数据库迁移..."
+    #${xui_folder}/x-ui migrate
+    #echo -e "${Success} 数据库迁移完成！${Plain}"
+}
+
+install_x-ui(){
+    install_base
+    echo -e "${Info} 开始安装 x-ui 面板..."
+    
+    cd ${xui_folder%/x-ui}/
+
+    # Download resources
+    if [ $# == 0 ]; then
+        echo -e "${Info} 正在获取最新版本信息..."
+        tag_version=$(curl -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        if [[ ! -n "$tag_version" ]]; then
+            echo -e "${Warning} 正在尝试通过 IPv4 获取版本...${Plain}"
+            tag_version=$(curl -4 -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+            if [[ ! -n "$tag_version" ]]; then
+                echo -e "${Error} 获取 x-ui 版本失败，可能是 GitHub API 限制，请稍后再试${Plain}"
+                exit 1
+            fi
+        fi
+        echo -e "${Success} 已获取 x-ui 最新版本: ${Green}${tag_version}${Plain}，开始安装..."
+        curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz
+        if [[ $? -ne 0 ]]; then
+            echo -e "${Error} 下载 x-ui 失败，请确保服务器可访问 GitHub ${Plain}"
+            exit 1
+        fi
+    else
+        tag_version=$1
+        tag_version_numeric=${tag_version#v}
+        min_version="2.3.5"
+
+        if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
+            echo -e "${Error} 请使用更新的版本（至少 v2.3.5），退出安装。${Plain}"
+            exit 1
+        fi
+
+        url="https://github.com/MHSanaei/3x-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz"
+        echo -e "${Info} 正在安装 x-ui ${tag_version}..."
+        curl -4fLRo ${xui_folder}-linux-$(arch).tar.gz ${url}
+        if [[ $? -ne 0 ]]; then
+            echo -e "${Error} 下载 x-ui 版本失败，请检查该版本是否存在 ${Plain}"
+            exit 1
+        fi
+    fi
+    
+    echo -e "${Info} 正在下载管理脚本..."
+    curl -4fLRo /usr/bin/x-ui-temp https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
+    if [[ $? -ne 0 ]]; then
+        echo -e "${Error} 下载 x-ui.sh 失败${Plain}"
         exit 1
     fi
 
-    echo "架构: ${arch}"
-}
-
-#This function will be called when user installed x-ui out of sercurity
-config_after_install() {
-    echo -e "${yellow}出于安全考虑，安装/更新完成后需要强制修改端口与账户密码${plain}"
-    read -p "确认是否继续,如选择n则跳过本次端口与账户密码设定[y/n]": config_confirm
-    if [[ x"${config_confirm}" == x"y" || x"${config_confirm}" == x"Y" ]]; then
-        read -p "请设置您的账户名:" config_account
-        echo -e "${yellow}您的账户名将设定为:${config_account}${plain}"
-        read -p "请设置您的账户密码:" config_password
-        echo -e "${yellow}您的账户密码将设定为:${config_password}${plain}"
-        read -p "请设置面板访问端口:" config_port
-        echo -e "${yellow}您的面板访问端口将设定为:${config_port}${plain}"
-        echo -e "${yellow}确认设定,设定中${plain}"
-        /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password}
-        echo -e "${yellow}账户密码设定完成${plain}"
-        /usr/local/x-ui/x-ui setting -port ${config_port}
-        echo -e "${yellow}面板端口设定完成${plain}"
-    else
-        echo -e "${red}已取消设定...${plain}"
-        if [[ ! -f "/etc/x-ui/x-ui.db" ]]; then
-            local usernameTemp=$(head -c 6 /dev/urandom | base64)
-            local passwordTemp=$(head -c 6 /dev/urandom | base64)
-            local portTemp=$(echo $RANDOM)
-            /usr/local/x-ui/x-ui setting -username ${usernameTemp} -password ${passwordTemp}
-            /usr/local/x-ui/x-ui setting -port ${portTemp}
-            echo -e "检测到您属于全新安装,出于安全考虑已自动为您生成随机用户与端口:"
-            echo -e "###############################################"
-            echo -e "${green}面板登录用户名:${usernameTemp}${plain}"
-            echo -e "${green}面板登录用户密码:${passwordTemp}${plain}"
-            echo -e "${red}面板登录端口:${portTemp}${plain}"
-            echo -e "###############################################"
-            echo -e "${red}如您遗忘了面板登录相关信息,可在安装完成后输入x-ui,输入选项7查看面板登录信息${plain}"
+    # Stop x-ui service and remove old resources
+    if [[ -e ${xui_folder}/ ]]; then
+        echo -e "${Info} 检测到已安装的 x-ui，正在停止服务..."
+        if [[ $release == "alpine" ]]; then
+            rc-service x-ui stop
         else
-            echo -e "${red}当前属于版本升级,保留之前设置项,登录方式保持不变,可输入x-ui后键入数字7查看面板登录信息${plain}"
+            systemctl stop x-ui
         fi
-    fi
-}
-
-install_x-ui() {
-    systemctl stop x-ui &> /dev/null
-    check_arch
-    cd /usr/local/
-
-    if [ $# == 0 ]; then
-        last_version=$(curl -Lsk "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        if [[ ! -n "$last_version" ]]; then
-            echo -e "${red}检测 x-ui 版本失败，可能是超出 Github API 限制，请稍后再试，或手动指定 x-ui 版本安装${plain}"
-            exit 1
-        fi
-        echo -e "检测到 x-ui 最新版本：${last_version}，开始安装"
-        wget --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 x-ui 失败，请确保你的服务器能够下载 Github 的文件${plain}"
-            exit 1
-        fi
-    else
-        last_version=$1
-        url="https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz"
-        echo -e "开始安装 x-ui v$1"
-        wget --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz ${url}
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 x-ui v$1 失败，请确保此版本存在${plain}"
-            exit 1
-        fi
+        # Kill any leftover mtg (MTProto) sidecars.
+        pkill -f 'mtg-linux-[^ ]* run ' > /dev/null 2>&1 || true
+        echo -e "${Info} 正在清理旧文件..."
+        rm ${xui_folder}/ -rf
     fi
 
-    if [[ -e /usr/local/x-ui/ ]]; then
-        rm /usr/local/x-ui/ -rf
-    fi
+    # Extract resources and set permissions
+    echo -e "${Info} 正在解压文件..."
+    tar zxvf x-ui-linux-$(arch).tar.gz
+    rm x-ui-linux-$(arch).tar.gz -f
 
-    tar zxvf x-ui-linux-${arch}.tar.gz
-    rm x-ui-linux-${arch}.tar.gz -f
     cd x-ui
-    chmod +x x-ui bin/xray-linux-${arch}
-    case "${release}" in
-        ubuntu | debian | kali | armbian)
-            cp -f x-ui.service.debian /etc/systemd/system/x-ui.service
-        ;;
-        *)
-            cp -f x-ui.service.rhel /etc/systemd/system/x-ui.service
-        ;;
-    esac
-    wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
-    chmod +x /usr/local/x-ui/x-ui.sh
+    chmod +x x-ui
+    chmod +x x-ui.sh
+
+    # Check the system's architecture and rename the file accordingly
+    if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
+        mv bin/xray-linux-$(arch) bin/xray-linux-arm
+        chmod +x bin/xray-linux-arm
+        if [[ -f bin/mtg-linux-$(arch) ]]; then
+            mv bin/mtg-linux-$(arch) bin/mtg-linux-arm
+            chmod +x bin/mtg-linux-arm
+        fi
+    fi
+    chmod +x x-ui bin/xray-linux-$(arch)
+    if [[ -f bin/mtg-linux-arm ]]; then
+        chmod +x bin/mtg-linux-arm
+    elif [[ -f bin/mtg-linux-$(arch) ]]; then
+        chmod +x bin/mtg-linux-$(arch)
+    fi
+
+    # Update x-ui cli and set permission
+    mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
     chmod +x /usr/bin/x-ui
+    mkdir -p /var/log/x-ui
+    
+    echo -e "${Info} 正在配置面板..."
     config_after_install
-    #echo -e "如果是全新安装，默认网页端口为 ${green}54321${plain}，用户名和密码默认都是 ${green}admin${plain}"
-    #echo -e "请自行确保此端口没有被其他程序占用，${yellow}并且确保 54321 端口已放行${plain}"
-    #    echo -e "若想将 54321 修改为其它端口，输入 x-ui 命令进行修改，同样也要确保你修改的端口也是放行的"
-    #echo -e ""
-    #echo -e "如果是更新面板，则按你之前的方式访问面板"
-    #echo -e ""
-    systemctl daemon-reload
-    systemctl enable x-ui
-    systemctl start x-ui
-    echo -e "${green}x-ui ${last_version}${plain} 安装完成，面板已启动，"
-    echo -e ""
-    echo -e "x-ui 管理脚本使用方法: "
-    echo -e "----------------------------------------------"
-    echo -e "x-ui              - 显示管理菜单 (功能更多)"
-    echo -e "x-ui start        - 启动 x-ui 面板"
-    echo -e "x-ui stop         - 停止 x-ui 面板"
-    echo -e "x-ui restart      - 重启 x-ui 面板"
-    echo -e "x-ui status       - 查看 x-ui 状态"
-    echo -e "x-ui enable       - 设置 x-ui 开机自启"
-    echo -e "x-ui disable      - 取消 x-ui 开机自启"
-    echo -e "x-ui log          - 查看 x-ui 日志"
-    echo -e "x-ui v2-ui        - 迁移本机器的 v2-ui 账号数据至 x-ui"
-    echo -e "x-ui update       - 更新 x-ui 面板"
-    echo -e "x-ui install      - 安装 x-ui 面板"
-    echo -e "x-ui uninstall    - 卸载 x-ui 面板"
-    echo -e "x-ui geo          - 更新 geo  数据"
-    echo -e "----------------------------------------------"
+
+    # Etckeeper compatibility
+    if [ -d "/etc/.git" ]; then
+        if [ -f "/etc/.gitignore" ]; then
+            if ! grep -q "x-ui/x-ui.db" "/etc/.gitignore"; then
+                echo "" >> "/etc/.gitignore"
+                echo "x-ui/x-ui.db" >> "/etc/.gitignore"
+                echo -e "${Success} 已将 x-ui.db 添加到 /etc/.gitignore（etckeeper 兼容）${Plain}"
+            fi
+        else
+            echo "x-ui/x-ui.db" > "/etc/.gitignore"
+            echo -e "${Success} 已创建 /etc/.gitignore 并添加 x-ui.db（etckeeper 兼容）${Plain}"
+        fi
+    fi
+
+    if [[ $release == "alpine" ]]; then
+        echo -e "${Info} 正在配置 Alpine OpenRC 服务..."
+        curl -4fLRo /etc/init.d/x-ui https://raw.githubusercontent.com/MHSanaei/3x-ui/main/x-ui.rc
+        if [[ $? -ne 0 ]]; then
+            echo -e "${Error} 下载 x-ui.rc 失败${Plain}"
+            exit 1
+        fi
+        chmod +x /etc/init.d/x-ui
+        rc-update add x-ui
+        rc-service x-ui start
+        echo -e "${Success} OpenRC 服务配置完成！${Plain}"
+    else
+        # Install systemd service file
+        service_installed=false
+
+        if [ -f "x-ui.service" ]; then
+            echo -e "${Info} 在解压文件中找到 x-ui.service，正在安装...${Plain}"
+            cp -f x-ui.service ${xui_service}/ > /dev/null 2>&1
+            if [[ $? -eq 0 ]]; then
+                service_installed=true
+            fi
+        fi
+
+        if [ "$service_installed" = false ]; then
+            case "${release}" in
+                ubuntu | debian | armbian)
+                    if [ -f "x-ui.service.debian" ]; then
+                        echo -e "${Info} 在解压文件中找到 x-ui.service.debian，正在安装...${Plain}"
+                        cp -f x-ui.service.debian ${xui_service}/x-ui.service > /dev/null 2>&1
+                        if [[ $? -eq 0 ]]; then
+                            service_installed=true
+                        fi
+                    fi
+                    ;;
+                arch | manjaro | parch)
+                    if [ -f "x-ui.service.arch" ]; then
+                        echo -e "${Info} 在解压文件中找到 x-ui.service.arch，正在安装...${Plain}"
+                        cp -f x-ui.service.arch ${xui_service}/x-ui.service > /dev/null 2>&1
+                        if [[ $? -eq 0 ]]; then
+                            service_installed=true
+                        fi
+                    fi
+                    ;;
+                *)
+                    if [ -f "x-ui.service.rhel" ]; then
+                        echo -e "${Info} 在解压文件中找到 x-ui.service.rhel，正在安装...${Plain}"
+                        cp -f x-ui.service.rhel ${xui_service}/x-ui.service > /dev/null 2>&1
+                        if [[ $? -eq 0 ]]; then
+                            service_installed=true
+                        fi
+                    fi
+                    ;;
+            esac
+        fi
+
+        # If service file not found in tar.gz, download from GitHub
+        if [ "$service_installed" = false ]; then
+            echo -e "${Warning} 在 tar.gz 中未找到服务文件，正在从 GitHub 下载...${Plain}"
+            case "${release}" in
+                ubuntu | debian | armbian)
+                    curl -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/MHSanaei/3x-ui/main/x-ui.service.debian > /dev/null 2>&1
+                    ;;
+                arch | manjaro | parch)
+                    curl -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/MHSanaei/3x-ui/main/x-ui.service.arch > /dev/null 2>&1
+                    ;;
+                *)
+                    curl -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/MHSanaei/3x-ui/main/x-ui.service.rhel > /dev/null 2>&1
+                    ;;
+            esac
+
+            if [[ $? -ne 0 ]]; then
+                echo -e "${Error} 从 GitHub 安装 x-ui.service 失败${Plain}"
+                exit 1
+            fi
+            service_installed=true
+        fi
+
+        if [ "$service_installed" = true ]; then
+            echo -e "${Info} 正在配置 systemd 服务单元...${Plain}"
+            chown root:root ${xui_service}/x-ui.service > /dev/null 2>&1
+            chmod 644 ${xui_service}/x-ui.service > /dev/null 2>&1
+            systemctl daemon-reload
+            systemctl enable x-ui
+            systemctl start x-ui
+            echo -e "${Success} systemd 服务配置完成！${Plain}"
+        else
+            echo -e "${Error} 安装 x-ui.service 文件失败${Plain}"
+            exit 1
+        fi
+    fi
+
+    echo -e "${Success} x-ui 安装完成，正在运行...${Plain}"
+    echo -e 
+    echo -e "┌───────────────────────────────────────────────────────┐
+│  x-ui 控制菜单用法（子命令）：                        │
+│                                                       │
+│  ${Blue}x-ui${Plain}              - 管理脚本                         │
+│  ${Blue}x-ui start${Plain}        - 启动                             │
+│  ${Blue}x-ui stop${Plain}         - 停止                             │
+│  ${Blue}x-ui restart${Plain}      - 重启                             │
+│  ${Blue}x-ui status${Plain}       - 当前状态                         │
+│  ${Blue}x-ui settings${Plain}     - 当前设置                         │
+│  ${Blue}x-ui enable${Plain}       - 开启开机自启                     │
+│  ${Blue}x-ui disable${Plain}      - 关闭开机自启                     │
+│  ${Blue}x-ui log${Plain}          - 查看日志                         │
+│  ${Blue}x-ui banlog${Plain}       - 查看 Fail2ban 封禁日志           │
+│  ${Blue}x-ui update${Plain}       - 更新                             │
+│  ${Blue}x-ui legacy${Plain}       - 历史版本                         │
+│  ${Blue}x-ui install${Plain}      - 安装                             │
+│  ${Blue}x-ui uninstall${Plain}    - 卸载                             │
+└───────────────────────────────────────────────────────┘"
 }
 
-echo -e "${green}开始安装${plain}"
-install_base
 install_x-ui $1
