@@ -189,15 +189,20 @@ config_after_install(){
     else
         echo -e "${red}cancel...${plain}"
         if [[ ! -f "/usr/local/s-ui/db/s-ui.db" ]]; then
-            local usernameTemp=$(head -c 6 /dev/urandom | base64)
-            local passwordTemp=$(head -c 6 /dev/urandom | base64)
-            echo -e "这是全新安装，出于安全考虑将生成随机登录信息:"
+            local usernameTemp=admin
+            local passwordTemp=admin
+            local portTemp=2095
+            local pathTemp=app
+            local subPortTemp=2094
+            local subPathTemp=sub
+            echo -e "这是全新安装，使用默认登录信息:"
             echo -e "###############################################"
             echo -e "${green}用户名:${usernameTemp}${plain}"
             echo -e "${green}密码:${passwordTemp}${plain}"
             echo -e "###############################################"
             echo -e "${red}如果您忘记了登录信息,您可以输入 ${green}s-ui${red} 进入配置菜单${plain}"
             /usr/local/s-ui/sui admin -username ${usernameTemp} -password ${passwordTemp}
+            /usr/local/s-ui/sui setting -port ${portTemp} -path ${pathTemp} -subPort ${subPortTemp} -subPath ${subPathTemp}
         else
             echo -e "${red} 这是您的升级，将保留原有设置,如果您忘记了登录信息,您可以输入 ${green}s-ui${red} 进入配置菜单${plain}"
         fi
