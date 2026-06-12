@@ -16,15 +16,15 @@ URL_FOR_GEO_IP='https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/
 URL_FOR_GEO_SITE='https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat'
 
 #Add some basic function here
-function LOGD() {
+function LOGD(){
     echo -e "${yellow}[DEG] $* ${plain}"
 }
 
-function LOGE() {
+function LOGE(){
     echo -e "${red}[ERR] $* ${plain}"
 }
 
-function LOGI() {
+function LOGI(){
     echo -e "${green}[INF] $* ${plain}"
 }
 # check root
@@ -73,7 +73,7 @@ elif [[ x"${release}" == x"debian" ]]; then
     fi
 fi
 
-confirm() {
+confirm(){
     if [[ $# > 1 ]]; then
         echo && read -p "$1 [默认$2]: " temp
         if [[ x"${temp}" == x"" ]]; then
@@ -89,7 +89,7 @@ confirm() {
     fi
 }
 
-confirm_restart() {
+confirm_restart(){
     confirm "是否重启面板，重启面板也会重启 xray" "y"
     if [[ $? == 0 ]]; then
         restart
@@ -98,12 +98,12 @@ confirm_restart() {
     fi
 }
 
-before_show_menu() {
+before_show_menu(){
     echo && echo -n -e "${yellow}按回车返回主菜单: ${plain}" && read temp
     show_menu
 }
 
-install() {
+install(){
     bash <(curl -Ls https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui-install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
@@ -114,7 +114,7 @@ install() {
     fi
 }
 
-update() {
+update(){
     confirm "本功能会强制重装当前最新版，数据不会丢失，是否继续?" "n"
     if [[ $? != 0 ]]; then
         LOGE "已取消"
@@ -130,7 +130,7 @@ update() {
     fi
 }
 
-uninstall() {
+uninstall(){
     confirm "确定要卸载面板吗,xray 也会卸载?" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
@@ -154,7 +154,7 @@ uninstall() {
     exit
 }
 
-reset_user() {
+reset_user(){
     confirm "确定要将用户名和密码重置为 admin 吗" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
@@ -167,7 +167,7 @@ reset_user() {
     confirm_restart
 }
 
-reset_config() {
+reset_config(){
     confirm "确定要重置所有面板设置吗，账号数据不会丢失，用户名和密码不会改变" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
@@ -180,7 +180,7 @@ reset_config() {
     confirm_restart
 }
 
-check_config() {
+check_config(){
     info=$(/usr/local/x-ui/x-ui setting -show true)
     if [[ $? != 0 ]]; then
         LOGE "get current settings error,please check logs"
@@ -189,7 +189,7 @@ check_config() {
     LOGI "${info}"
 }
 
-set_port() {
+set_port(){
     echo && echo -n -e "输入端口号[1-65535]: " && read port
     if [[ -z "${port}" ]]; then
         LOGD "已取消"
@@ -201,7 +201,7 @@ set_port() {
     fi
 }
 
-start() {
+start(){
     check_status
     if [[ $? == 0 ]]; then
         echo ""
@@ -222,7 +222,7 @@ start() {
     fi
 }
 
-stop() {
+stop(){
     check_status
     if [[ $? == 1 ]]; then
         echo ""
@@ -243,7 +243,7 @@ stop() {
     fi
 }
 
-restart() {
+restart(){
     systemctl restart x-ui
     sleep 2
     check_status
@@ -257,14 +257,14 @@ restart() {
     fi
 }
 
-status() {
+status(){
     systemctl status x-ui -l
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
 }
 
-enable() {
+enable(){
     systemctl enable x-ui
     if [[ $? == 0 ]]; then
         LOGI "x-ui 设置开机自启成功"
@@ -277,7 +277,7 @@ enable() {
     fi
 }
 
-disable() {
+disable(){
     systemctl disable x-ui
     if [[ $? == 0 ]]; then
         LOGI "x-ui 取消开机自启成功"
@@ -290,27 +290,27 @@ disable() {
     fi
 }
 
-show_log() {
+show_log(){
     journalctl -u x-ui.service -e --no-pager -f
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
 }
 
-migrate_v2_ui() {
+migrate_v2_ui(){
     /usr/local/x-ui/x-ui v2-ui
 
     before_show_menu
 }
 
-install_bbr() {
+install_bbr(){
     # temporary workaround for installing bbr
     bash <(curl -L -s https://raw.githubusercontent.com/teddysun/across/master/bbr.sh)
     echo ""
     before_show_menu
 }
 
-update_shell() {
+update_shell(){
     wget -O /usr/bin/x-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
@@ -323,7 +323,7 @@ update_shell() {
 }
 
 # 0: running, 1: not running, 2: not installed
-check_status() {
+check_status(){
     if [[ ! -f /etc/systemd/system/x-ui.service ]]; then
         return 2
     fi
@@ -335,7 +335,7 @@ check_status() {
     fi
 }
 
-check_enabled() {
+check_enabled(){
     temp=$(systemctl is-enabled x-ui)
     if [[ x"${temp}" == x"enabled" ]]; then
         return 0
@@ -344,7 +344,7 @@ check_enabled() {
     fi
 }
 
-check_uninstall() {
+check_uninstall(){
     check_status
     if [[ $? != 2 ]]; then
         echo ""
@@ -358,7 +358,7 @@ check_uninstall() {
     fi
 }
 
-check_install() {
+check_install(){
     check_status
     if [[ $? == 2 ]]; then
         echo ""
@@ -372,7 +372,7 @@ check_install() {
     fi
 }
 
-show_status() {
+show_status(){
     check_status
     case $? in
     0)
@@ -390,7 +390,7 @@ show_status() {
     show_xray_status
 }
 
-show_enable_status() {
+show_enable_status(){
     check_enabled
     if [[ $? == 0 ]]; then
         echo -e "是否开机自启: ${green}是${plain}"
@@ -399,7 +399,7 @@ show_enable_status() {
     fi
 }
 
-check_xray_status() {
+check_xray_status(){
     count=$(ps -ef | grep "xray-linux" | grep -v "grep" | wc -l)
     if [[ count -ne 0 ]]; then
         return 0
@@ -408,7 +408,7 @@ check_xray_status() {
     fi
 }
 
-show_xray_status() {
+show_xray_status(){
     check_xray_status
     if [[ $? == 0 ]]; then
         echo -e "xray 状态: ${green}运行${plain}"
@@ -420,7 +420,7 @@ show_xray_status() {
 #this will be an entrance for ssl cert issue
 #here we can provide two different methods to issue cert
 #first.standalone mode second.DNS API mode
-ssl_cert_issue() {
+ssl_cert_issue(){
     local method=""
     echo -E ""
     LOGD "******使用说明******"
@@ -442,7 +442,7 @@ ssl_cert_issue() {
     fi
 }
 
-install_acme() {
+install_acme(){
     cd ~
     LOGI "开始安装acme脚本..."
     curl https://get.acme.sh | sh
@@ -456,7 +456,7 @@ install_acme() {
 }
 
 #method for standalone mode
-ssl_cert_issue_standalone() {
+ssl_cert_issue_standalone(){
     #check for acme.sh first
     if ! command -v ~/.acme.sh/acme.sh &>/dev/null; then
         install_acme
@@ -541,7 +541,7 @@ ssl_cert_issue_standalone() {
 }
 
 #method for DNS API mode
-ssl_cert_issue_by_cloudflare() {
+ssl_cert_issue_by_cloudflare(){
     echo -E ""
     LOGD "******使用说明******"
     LOGI "该脚本将使用Acme脚本申请证书,使用时需保证:"
@@ -624,7 +624,7 @@ ssl_cert_issue_by_cloudflare() {
 }
 
 #add for cron jobs,including sync geo data,check logs and restart x-ui
-cron_jobs() {
+cron_jobs(){
     clear
     echo -e "
   ${green}定时任务管理${plain}
@@ -658,7 +658,7 @@ cron_jobs() {
 }
 
 #update geo data
-update_geo() {
+update_geo(){
     #back up first
     mv ${PATH_FOR_GEO_IP} ${PATH_FOR_GEO_IP}.bak
     #update data
@@ -683,7 +683,7 @@ update_geo() {
     systemctl restart x-ui
 }
 
-enable_auto_update_geo() {
+enable_auto_update_geo(){
     LOGI "正在开启自动更新geo数据..."
     crontab -l >/tmp/crontabTask.tmp
     echo "00 4 */2 * * x-ui geo > /dev/null" >>/tmp/crontabTask.tmp
@@ -692,7 +692,7 @@ enable_auto_update_geo() {
     LOGI "开启自动更新geo数据成功"
 }
 
-disable_auto_update_geo() {
+disable_auto_update_geo(){
     crontab -l | grep -v "x-ui geo" | crontab -
     if [[ $? -ne 0 ]]; then
         LOGI "取消x-ui 自动更新geo数据失败"
@@ -703,7 +703,7 @@ disable_auto_update_geo() {
 
 #clear xray log,need enable log in config template
 #here we need input an absolute path for log
-clear_log() {
+clear_log(){
     LOGI "清除xray日志中..."
     local filePath=''
     if [[ $# -gt 0 ]]; then
@@ -732,7 +732,7 @@ clear_log() {
 }
 
 #enable auto delete log，need file path as
-enable_auto_clear_log() {
+enable_auto_clear_log(){
     LOGI "设置定时清除xray日志..."
     local accessfilePath=''
     local errorfilePath=''
@@ -764,7 +764,7 @@ enable_auto_clear_log() {
 }
 
 #disable auto dlete log
-disable_auto_clear_log() {
+disable_auto_clear_log(){
     crontab -l | grep -v "x-ui clear" | crontab -
     if [[ $? -ne 0 ]]; then
         LOGI "取消 定时清除xray日志失败"
@@ -773,7 +773,7 @@ disable_auto_clear_log() {
     fi
 }
 
-show_usage() {
+show_usage(){
     echo "x-ui 管理脚本使用方法: "
     echo "------------------------------------------"
     echo "x-ui              - 显示管理菜单 (功能更多)"
@@ -794,7 +794,7 @@ show_usage() {
     echo "------------------------------------------"
 }
 
-show_menu() {
+show_menu(){
     echo -e "
   ${green}x-ui 面板管理脚本${plain}
   ${green}0.${plain} 退出脚本
