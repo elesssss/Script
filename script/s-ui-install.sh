@@ -1,13 +1,27 @@
 #!/bin/bash
 
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[0;33m'
-plain='\033[0m'
+# 颜色定义
+Green="\033[32m"        # 绿色
+Red="\033[31m"          # 红色
+Yellow="\033[0;33m"     # 黄色
+Blue="\033[0;34m"       # 蓝色
+Plain="\033[0m"         # 重置颜色
+Green_background="\033[42;37m"  # 绿底
+Red_background="\033[41;37m"    # 红底
+Yellow_globa="\033[43;37m"      # 黄底
+Blue_globa="\033[44;37m"        # 蓝底
+
+# 状态提示
+Info="${Green}[信息]${Plain}"
+Error="${Red}[错误]${Plain}"
+Warning="${Yellow}[警告]${Plain}"
+Success="${Green}[成功]${Plain}"
+Tip="${Yellow}[提示]${Plain}"
+
 cur_dir=$(pwd)
 
 # check root
-[[ $EUID -ne 0 ]] && echo -e "${red}错误: ${plain} 请以root权限运行此脚本 \n " && exit 1
+[[ $EUID -ne 0 ]] && echo -e "${Error} 请以root权限运行此脚本 \n " && exit 1
 
 check_arch(){
     arch=$(arch)
@@ -26,11 +40,11 @@ check_arch(){
     elif [[ $arch == "s390x" ]]; then
         arch="s390x"
     else
-        echo -e "${red}检测到您的架构不支持，请联系作者！${plain}"
+        echo -e "${Error} 检测到您的架构不支持，请联系作者！${Plain}"
         exit 1
     fi
 
-    echo "架构: ${arch}"
+    echo -e "${Info} 架构: ${Green}${arch}${Plain}"
 }
 
 check_release(){
@@ -44,45 +58,45 @@ check_release(){
     os_version=$(echo $VERSION_ID | cut -d \" -f2 | cut -d . -f1)
 
     if [[ "${release}" == "arch" ]]; then
-        echo "您的系统是 Arch Linux"
+        echo -e "${Info} 您的系统是 Arch Linux${Plain}"
     elif [[ "${release}" == "parch" ]]; then
-        echo "您的系统是 Parch linux"
+        echo -e "${Info} 您的系统是 Parch linux${Plain}"
     elif [[ "${release}" == "manjaro" ]]; then
-        echo "您的系统是 Manjaro"
+        echo -e "${Info} 您的系统是 Manjaro${Plain}"
     elif [[ "${release}" == "armbian" ]]; then
-        echo "您的系统是 Armbian"
+        echo -e "${Info} 您的系统是 Armbian${Plain}"
     elif [[ "${release}" == "opensuse-tumbleweed" ]]; then
-        echo "您的系统是 OpenSUSE Tumbleweed"
+        echo -e "${Info} 您的系统是 OpenSUSE Tumbleweed${Plain}"
     elif [[ "${release}" == "centos" ]]; then
         if [[ ${os_version} -lt 9 ]]; then
-            echo -e "${red} 请使用CentOS 9或以上版本!${plain}\n" && exit 1
+            echo -e "${Error} 请使用CentOS 9或以上版本!${Plain}\n" && exit 1
         fi
     elif [[ "${release}" == "ubuntu" ]]; then
         if [[ ${os_version} -lt 22 ]]; then
-            echo -e "${red} 请使用Ubuntu 22或以上版本!${plain}\n" && exit 1
+            echo -e "${Error} 请使用Ubuntu 22或以上版本!${Plain}\n" && exit 1
         fi
     elif [[ "${release}" == "fedora" ]]; then
         if [[ ${os_version} -lt 36 ]]; then
-            echo -e "${red} 请使用Fedora 36或以上版本!${plain}\n" && exit 1
+            echo -e "${Error} 请使用Fedora 36或以上版本!${Plain}\n" && exit 1
         fi
     elif [[ "${release}" == "debian" ]]; then
-        if [[ ${os_version} -lt 12 ]]; then
-            echo -e "${red} 请使用Debian 12或以上版本!${plain}\n" && exit 1
+        if [[ ${os_version} -lt 11 ]]; then
+            echo -e "${Error} 请使用Debian 12或以上版本!${Plain}\n" && exit 1
         fi
     elif [[ "${release}" == "almalinux" ]]; then
         if [[ ${os_version} -lt 95 ]]; then
-            echo -e "${red} 请使用AlmaLinux 9.5或以上版本!${plain}\n" && exit 1
+            echo -e "${Error} 请使用AlmaLinux 9.5或以上版本!${Plain}\n" && exit 1
         fi
     elif [[ "${release}" == "rocky" ]]; then
         if [[ ${os_version} -lt 95 ]]; then
-            echo -e "${red} 请使用Rocky Linux 9.5或以上版本!${plain}\n" && exit 1
+            echo -e "${Error} 请使用Rocky Linux 9.5或以上版本!${Plain}\n" && exit 1
         fi
     elif [[ "${release}" == "ol" ]]; then
         if [[ ${os_version} -lt 8 ]]; then
-            echo -e "${red} 请使用Oracle Linux 8或以上版本!${plain}\n" && exit 1
+            echo -e "${Error} 请使用Oracle Linux 8或以上版本!${Plain}\n" && exit 1
         fi
     else
-        echo -e "${red}您的操作系统不支持此脚本.${plain}\n"
+        echo -e "${Error} 您的操作系统不支持此脚本.${Plain}\n"
         echo "请确保您正在使用以下受支持的操作系统之一:"
         echo "- Ubuntu 22.04+"
         echo "- Debian 12+"
@@ -128,9 +142,7 @@ check_pmc(){
 install_base(){
     check_pmc
     cmds=("wget" "curl" "tar")
-    echo -e "${green}[Info]${plain} 你的系统是${red} $release $os_version ${plain}"
-    echo
-
+    
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
             DEPS+=("${apps[i]}")
@@ -138,34 +150,34 @@ install_base(){
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${yellow}[Tip]${plain} 安装依赖列表：${green}${DEPS[*]}${plain} 请稍后..."
+        echo -e "${Info} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
+        echo -e "${Success} 依赖安装完成！${Plain}"
     else
-        echo -e "${yellow}[Tip]${plain} 所有依赖已存在，不需要额外安装。"
+        echo -e "${Success} 所有依赖已存在，不需要额外安装。${Plain}"
     fi
 }
 
 config_after_install(){
-    echo -e "${yellow}Migration... ${plain}"
     /usr/local/s-ui/sui migrate &>/dev/null
     
-    echo -e "${yellow}安装/更新完成！出于安全考虑，建议修改面板设置。 ${plain}"
-    read -p "您是否要继续进行修改 [y/n]？ ": config_confirm
+    echo -e "${Warning} 安装/更新完成！出于安全考虑，建议修改面板设置。${Plain}"
+    read -p "$(echo -e "${Tip} 您是否要继续进行修改 [y/n]？ ")" config_confirm
     if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
-        echo -e "请输入${yellow}面板端口${plain} (默认值则留空）:"
+        echo -e "${Tip} 请输入${Yellow}面板端口${Plain} (默认值则留空）:"
         read config_port
-        echo -e "请输入${yellow}面板路径${plain} (默认值则留空):"
+        echo -e "${Tip} 请输入${Yellow}面板路径${Plain} (默认值则留空):"
         read config_path
 
         # Sub configuration
-        echo -e "请输入${yellow}订阅端口${plain} (默认值则留空):"
+        echo -e "${Tip} 请输入${Yellow}订阅端口${Plain} (默认值则留空):"
         read config_subPort
-        echo -e "请输入${yellow}订阅路径${plain} (默认值则留空):" 
+        echo -e "${Tip} 请输入${Yellow}订阅路径${Plain} (默认值则留空):" 
         read config_subPath
 
         # Set configs
-        echo -e "${yellow}正在初始化，请稍候...${plain}"
+        echo -e "${Info} 正在初始化，请稍候...${Plain}"
         params=""
         [ -z "$config_port" ] || params="$params -port $config_port"
         [ -z "$config_path" ] || params="$params -path $config_path"
@@ -173,21 +185,19 @@ config_after_install(){
         [ -z "$config_subPath" ] || params="$params -subPath $config_subPath"
         /usr/local/s-ui/sui setting ${params}
 
-        read -p "您是否要更改管理员凭据 [y/n]? ": admin_confirm
+        read -p "$(echo -e "${Tip} 您是否要更改管理员凭据 [y/n]? ")" admin_confirm
         if [[ "${admin_confirm}" == "y" || "${admin_confirm}" == "Y" ]]; then
             # First admin credentials
-            read -p "请设置您的用户名:" config_account
-            read -p "请设置您的密码:" config_password
+            read -p "$(echo -e "${Tip} 请设置您的用户名: ")" config_account
+            read -p "$(echo -e "${Tip} 请设置您的密码: ")" config_password
 
-            # Set credentials
-            echo -e "${yellow}正在初始化，请稍候...${plain}"
             /usr/local/s-ui/sui admin -username ${config_account} -password ${config_password}
         else
-            echo -e "${yellow}您当前的管理员凭据: ${plain}"
-            /usr/local/s-ui/sui admin -show
+            echo -e "${Info} 您当前的管理员凭据: ${Plain}"
+            /usr/local/s-ui/sui admin -show 
         fi
     else
-        echo -e "${red}cancel...${plain}"
+        echo -e "${Warning} 已取消配置修改。${Plain}"
         if [[ ! -f "/usr/local/s-ui/db/s-ui.db" ]]; then
             local usernameTemp=admin
             local passwordTemp=admin
@@ -195,31 +205,39 @@ config_after_install(){
             local pathTemp=app
             local subPortTemp=2094
             local subPathTemp=sub
-            echo -e "这是全新安装，使用默认登录信息:"
-            echo -e "###############################################"
-            echo -e "${green}用户名:${usernameTemp}${plain}"
-            echo -e "${green}密码:${passwordTemp}${plain}"
-            echo -e "###############################################"
-            echo -e "${red}如果您忘记了登录信息,您可以输入 ${green}s-ui${red} 进入配置菜单${plain}"
-            /usr/local/s-ui/sui admin -username ${usernameTemp} -password ${passwordTemp}
-            /usr/local/s-ui/sui setting -port ${portTemp} -path ${pathTemp} -subPort ${subPortTemp} -subPath ${subPathTemp}
+            
+            echo -e "${Info} 检测到全新安装，使用默认登录信息:"
+            echo -e "${Green}###############################################${Plain}"
+            echo -e "${Green}用户名: ${usernameTemp}${Plain}"
+            echo -e "${Green}密码: ${passwordTemp}${Plain}"
+            echo -e "${Green}面板端口: ${portTemp}${Plain}"
+            echo -e "${Green}面板路径: ${pathTemp}${Plain}"
+            echo -e "${Green}订阅端口: ${subPortTemp}${Plain}"
+            echo -e "${Green}订阅路径: ${subPathTemp}${Plain}"
+            echo -e "${Green}###############################################${Plain}"
+            echo -e "${Warning} 如果您忘记了登录信息，您可以输入 ${Green}s-ui${Plain} 进入配置菜单"
+            
+            /usr/local/s-ui/sui admin -username ${usernameTemp} -password ${passwordTemp} &>/dev/null
+            /usr/local/s-ui/sui setting -port ${portTemp} -path ${pathTemp} -subPort ${subPortTemp} -subPath ${subPathTemp} &>/dev/null
         else
-            echo -e "${red} 这是您的升级，将保留原有设置,如果您忘记了登录信息,您可以输入 ${green}s-ui${red} 进入配置菜单${plain}"
+            echo -e "${Info} 检测到升级安装，将保留原有设置。${Plain}"
+            echo -e "${Warning} 如果您忘记了登录信息，您可以输入 ${Green}s-ui${Plain} 进入配置菜单"
         fi
     fi
 }
 
 prepare_services(){
     if [[ -f "/etc/systemd/system/sing-box.service" ]]; then
-        echo -e "${yellow}停止 sing-box 服务... ${plain}"
+        echo -e "${Warning} 停止 sing-box 服务... ${Plain}"
         systemctl stop sing-box
         rm -f /usr/local/s-ui/bin/sing-box /usr/local/s-ui/bin/runSingbox.sh /usr/local/s-ui/bin/signal
+        echo -e "${Success} sing-box 服务已停止并清理${Plain}"
     fi
     if [[ -e "/usr/local/s-ui/bin" ]]; then
-        echo -e "###############################################################"
-        echo -e "${green}/usr/local/s-ui/bin${red} 目录是否存在!"
-        echo -e "请检查内容并在迁移后手动删除。 ${plain}"
-        echo -e "###############################################################"
+        echo -e "${Green}###############################################################${Plain}"
+        echo -e "${Warning} /usr/local/s-ui/bin${Plain} 目录是否存在!"
+        echo -e "${Tip} 请检查内容并在迁移后手动删除。 ${Plain}"
+        echo -e "${Green}###############################################################${Plain}"
     fi
     systemctl daemon-reload
 }
@@ -229,54 +247,56 @@ install_s-ui(){
     cd /tmp/
 
     if [ $# == 0 ]; then
+        echo -e "${Info} 正在获取最新版本信息...${Plain}"
         last_version=$(curl -Ls "https://api.github.com/repos/alireza0/s-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$last_version" ]]; then
-            echo -e "${red}无法获取 s-ui 版本，这可能是由于 GitHub API 限制所致，请稍后再试${plain}"
+            echo -e "${Error} 无法获取 s-ui 版本，这可能是由于 GitHub API 限制所致，请稍后再试${Plain}"
             exit 1
         fi
-        echo -e "已获取S-UI最新版本: ${last_version}, 开始安装..."
+        echo -e "${Success} 已获取 S-UI 最新版本: ${Green}${last_version}${Plain}，开始安装..."
         wget -N --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 s-ui 失败, 请确保您的服务器能够访问GitHub ${plain}"
+            echo -e "${Error} 下载 s-ui 失败，请确保您的服务器能够访问 GitHub ${Plain}"
             exit 1
         fi
     else
         last_version=$1
         url="https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz"
-        echo -e "开始安装 s-ui v$1"
+        echo -e "${Info} 开始安装 S-UI v${last_version}${Plain}"
         wget -N --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 s-ui v$1 失败，请确认该版本是否存在。${plain}"
+            echo -e "${Error} 下载 s-ui v${last_version} 失败，请确认该版本是否存在。${Plain}"
             exit 1
         fi
     fi
 
     if [[ -e /usr/local/s-ui/ ]]; then
+        echo -e "${Info} 检测到已安装的 S-UI，正在停止服务...${Plain}"
         systemctl stop s-ui
     fi
 
+    echo -e "${Info} 正在解压文件...${Plain}"
     tar zxvf s-ui-linux-${arch}.tar.gz
     rm s-ui-linux-${arch}.tar.gz -f
 
+    echo -e "${Info} 正在下载管理脚本...${Plain}"
     wget -O /usr/bin/s-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
     chmod +x /usr/bin/s-ui
+    
     cp -rf s-ui /usr/local/
     cp -f s-ui/*.service /etc/systemd/system/
     rm -rf s-ui
-
     config_after_install
     prepare_services
-
     systemctl enable s-ui --now
-
-    echo -e "${green}s-ui v${last_version}${plain} 安装完成，现在已经正常运行了..."
-    echo -e "您可以通过以下URL访问该面板(s):${green}"
+    echo -e ""
+    echo -e "${Green}s-ui v${last_version}${Plain} 安装完成，现在已经正常运行了..."
+    echo -e "${Info} 您可以通过以下 URL 访问面板:"${Green}
     /usr/local/s-ui/sui uri
-    echo -e "${plain}"
+    echo -e "${Plain}"
     echo -e ""
     s-ui help
 }
 
-echo -e "${green}正在执行...${plain}"
 install_base
 install_s-ui $1
