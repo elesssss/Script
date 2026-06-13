@@ -175,12 +175,6 @@ config_after_install(){
             echo -e "${Info} 正在应用面板配置..."
             ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
 
-            # 强制使用 HTTP - 清除任何已存在的证书设置
-            ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
-
-            # 确保面板监听所有接口
-            ${xui_folder}/x-ui setting -listenIP "0.0.0.0" > /dev/null 2>&1
-
             # Retrieve the API token for display
             local config_apiToken=$(${xui_folder}/x-ui setting -getApiToken true | grep -Eo 'apiToken: .+' | awk '{print $2}')
 
@@ -204,9 +198,6 @@ config_after_install(){
             echo -e "${Warning} WebBasePath 缺失或太短，正在生成新路径...${Plain}"
             ${xui_folder}/x-ui setting -webBasePath "${config_webBasePath}"
             echo -e "${Success} 新的 Web根路径: ${Green}${config_webBasePath}${Plain}"
-
-            # 确保清除任何现有证书
-            ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
             echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${config_webBasePath}${Plain}"
         fi
     else
@@ -224,15 +215,13 @@ config_after_install(){
         else
             echo -e "${Success} 用户名、密码和 WebBasePath 已正确设置。${Plain}"
         fi
-
-        # 确保清除任何现有证书
-        ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
         echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${existing_webBasePath}${Plain}"
     fi
 
-    #echo -e "${Info} 正在执行数据库迁移..."
-    #${xui_folder}/x-ui migrate
-    #echo -e "${Success} 数据库迁移完成！${Plain}"
+    # 确保面板监听所有接口
+    ${xui_folder}/x-ui setting -listenIP "0.0.0.0" > /dev/null 2>&1
+    # 确保清除任何现有证书
+    ${xui_folder}/x-ui cert -webCert "" -webCertKey "" > /dev/null 2>&1
 }
 
 install_x-ui(){
@@ -437,7 +426,7 @@ install_x-ui(){
         fi
     fi
 
-    echo -e "${Success} x-ui 安装完成，正在运行...${Plain}"
+    echo -e "${Success} x-ui 安装完成.${Plain}"
     echo -e 
     echo -e "┌───────────────────────────────────────────────────────┐
 │  x-ui 控制菜单用法（子命令）：                        │
