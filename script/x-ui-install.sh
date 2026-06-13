@@ -428,24 +428,7 @@ install_x-ui(){
 
     echo -e "${Success} x-ui 安装完成.${Plain}"
     echo -e 
-    echo -e "┌───────────────────────────────────────────────────────┐
-│  x-ui 控制菜单用法（子命令）：                        │
-│                                                       │
-│  ${Blue}x-ui${Plain}              - 管理脚本                         │
-│  ${Blue}x-ui start${Plain}        - 启动                             │
-│  ${Blue}x-ui stop${Plain}         - 停止                             │
-│  ${Blue}x-ui restart${Plain}      - 重启                             │
-│  ${Blue}x-ui status${Plain}       - 当前状态                         │
-│  ${Blue}x-ui settings${Plain}     - 当前设置                         │
-│  ${Blue}x-ui enable${Plain}       - 开启开机自启                     │
-│  ${Blue}x-ui disable${Plain}      - 关闭开机自启                     │
-│  ${Blue}x-ui log${Plain}          - 查看日志                         │
-│  ${Blue}x-ui banlog${Plain}       - 查看 Fail2ban 封禁日志           │
-│  ${Blue}x-ui update${Plain}       - 更新                             │
-│  ${Blue}x-ui legacy${Plain}       - 历史版本                         │
-│  ${Blue}x-ui install${Plain}      - 安装                             │
-│  ${Blue}x-ui uninstall${Plain}    - 卸载                             │
-└───────────────────────────────────────────────────────┘"
+    x-ui help
 }
 
 install_x-ui $1
