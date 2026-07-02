@@ -108,11 +108,7 @@ gen_random_string(){
 
 config_after_install(){
     echo -e "${Info} 正在配置面板设置..."
-    
-    local existing_hasDefaultCredential=$(${xui_folder}/x-ui setting -show true | grep -Eo 'hasDefaultCredential: .+' | awk '{print $2}')
-    local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
-    local existing_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
-    
+
     local URL_lists=(
         "https://api4.ipify.org"
         "https://ipv4.icanhazip.com"
@@ -147,70 +143,60 @@ config_after_install(){
         done
     fi
 
-    if [[ ${#existing_webBasePath} -lt 4 ]]; then
-        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
-            local config_webBasePath=$(gen_random_string 18)
-            local config_username=$(gen_random_string 10)
-            local config_password=$(gen_random_string 10)
+    if [ ! -f "/etc/x-ui/x-ui.db" ]; then
+        local config_webBasePath=app
+        local config_username=admin
+        local config_password=admin
 
-            echo ""
-            local db_label="${Green}SQLite${Plain} (/etc/x-ui/x-ui.db)"
+        echo ""
+        local db_label="${Green}SQLite${Plain} (/etc/x-ui/x-ui.db)"
 
-            read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
-            if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
-                while true; do
-                    read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
-                    if [[ "$config_port" =~ ^[0-9]+$ ]] && [ "$config_port" -ge 10000 ] && [ "$config_port" -le 65535 ]; then
-                        echo -e "${Info} 面板端口: ${Green}${config_port}${Plain}"
-                        break
-                    else
-                        echo -e "${Error} 无效端口，请输入 10000-65535 之间的数字。${Plain}"
-                    fi
-                done
-            else
-                local config_port=$(shuf -i 10000-65535 -n 1)
-                echo -e "${Info} 已生成随机端口: ${Green}${config_port}${Plain}"
-            fi
-
-            echo -e "${Info} 正在应用面板配置..."
-            ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
-
-            # Retrieve the API token for display
-            local config_apiToken=$(${xui_folder}/x-ui setting -getApiToken true | grep -Eo 'apiToken: .+' | awk '{print $2}')
-
-            # Display final credentials and access information
-            echo ""
-            echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
-            echo -e "${Green}                    面板安装完成！                      ${Plain}"
-            echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
-            echo -e "${Green}用户名:     ${Plain}${config_username}"
-            echo -e "${Green}密码:       ${Plain}${config_password}"
-            echo -e "${Green}端口:       ${Plain}${config_port}"
-            echo -e "${Green}Web根路径:  ${Plain}${config_webBasePath}"
-            echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_webBasePath}${Plain}"
-            echo -e "${Green}API Token:  ${Plain}${config_apiToken}"
-            echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
-            echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
-            echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
-            echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}x-ui${Plain} 命令。${Plain}"
+        read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
+        if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
+            while true; do
+                read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
+                if [[ "$config_port" =~ ^[0-9]+$ ]] && [ "$config_port" -ge 10000 ] && [ "$config_port" -le 65535 ]; then
+                    echo -e "${Info} 面板端口: ${Green}${config_port}${Plain}"
+                    break
+                else
+                    echo -e "${Error} 无效端口，请输入 10000-65535 之间的数字。${Plain}"
+                fi
+            done
         else
-            local config_webBasePath=$(gen_random_string 18)
-            echo -e "${Warning} WebBasePath 缺失或太短，正在生成新路径...${Plain}"
-            ${xui_folder}/x-ui setting -webBasePath "${config_webBasePath}"
-            echo -e "${Success} 新的 Web根路径: ${Green}${config_webBasePath}${Plain}"
-            echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${config_webBasePath}${Plain}"
+            local config_port=$(shuf -i 10000-65535 -n 1)
+            echo -e "${Info} 已生成随机端口: ${Green}${config_port}${Plain}"
         fi
-    else
-        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
-            local config_username=$(gen_random_string 10)
-            local config_password=$(gen_random_string 10)
 
-            echo -e "${Warning} 检测到默认凭据，正在进行安全更新...${Plain}"
-            ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}"
-            echo -e "${Success} 已生成新的随机登录凭据：${Plain}"
+        echo -e "${Info} 正在应用面板配置..."
+        ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
+
+        # Retrieve the API token for display
+        local config_apiToken=$(${xui_folder}/x-ui setting -getApiToken true | grep -Eo 'apiToken: .+' | awk '{print $2}')
+
+        # Display final credentials and access information
+        echo ""
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}                    面板安装完成！                      ${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}用户名:     ${Plain}${config_username}"
+        echo -e "${Green}密码:       ${Plain}${config_password}"
+        echo -e "${Green}端口:       ${Plain}${config_port}"
+        echo -e "${Green}Web根路径:  ${Plain}${config_webBasePath}"
+        echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_webBasePath}${Plain}"
+        echo -e "${Green}API Token:  ${Plain}${config_apiToken}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+        echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+        echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}x-ui${Plain} 命令。${Plain}"
+    else
+        local existing_hasDefaultCredential=$(${xui_folder}/x-ui setting -show true | grep -Eo 'hasDefaultCredential: .+' | awk '{print $2}')
+        local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
+        local existing_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
+        
+        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
             echo -e "${Green}###############################################${Plain}"
-            echo -e "${Green}用户名: ${Plain}${config_username}"
-            echo -e "${Green}密码:   ${Plain}${config_password}"
+            echo -e "${Green}用户名: ${Plain}admin"
+            echo -e "${Green}密码:   ${Plain}admin"
             echo -e "${Green}###############################################${Plain}"
         else
             echo -e "${Success} 用户名、密码和 WebBasePath 已正确设置。${Plain}"
