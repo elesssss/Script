@@ -9,57 +9,102 @@ export PATH
 #       WebSite: https://t.me/fun513
 #=================================================
 
-# 输出字体颜色
-GREEN="\033[32m"
-RED="\033[31m"
-YELLOW="\033[0;33m"
-NC="\033[0m"
-GREEN_ground="\033[42;37m" # 全局绿色
-RED_ground="\033[41;37m"   # 全局红色
-Info="${GREEN}[信息]${NC}"
-Error="${RED}[错误]${NC}"
-Tip="${YELLOW}[注意]${NC}"
+# 颜色定义
+Green="\033[32m"        # 绿色
+Red="\033[31m"          # 红色
+Yellow="\033[0;33m"     # 黄色
+Blue="\033[0;34m"       # 蓝色
+Plain="\033[0m"         # 重置颜色
+Green_background="\033[42;37m"  # 绿底
+Red_background="\033[41;37m"    # 红底
+Yellow_globa="\033[43;37m"      # 黄底
+Blue_globa="\033[44;37m"        # 蓝底
+
+# 状态提示
+Info="${Green}[信息]${Plain}"
+Error="${Red}[错误]${Plain}"
+Warning="${Yellow}[警告]${Plain}"
+Success="${Green}[成功]${Plain}"
+Tip="${Yellow}[提示]${Plain}"
 
 # 设置变量
-sh_ver="v1.16.1"
+sh_ver="v1.24.0"
 FILE="/usr/local/bin/shadowsocks"
 FOLDER="/etc/shadowsocks"
 CONF="${FOLDER}/config.json"
-dowloadURL="ipaddres:port/"
+dowloadURL="http://120.79.176.207:54321/shadowsocks/"
 
-check_root() {
+check_root(){
     if [[ $(whoami) != "root" ]]; then
-        echo -e "${Error} 当前非ROOT账号(或没有ROOT权限)，无法 继续操作，请更换ROOT账号或使用 ${GREEN_ground}sudo su${NC} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。"
+        echo -e "${Error} 当前非ROOT账号(或没有ROOT权限)，无法继续操作，请更换ROOT账号或使用 ${Green_background}sudo su${Plain} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。"
         exit 1
     fi
 }
 
-Installation_dependency() {
-    OS=$(cat /etc/os-release | grep -o -E "Debian|Ubuntu|CentOS" | head -n 1)
-    if [[ "$OS" != "Debian" && "$OS" != "Ubuntu" && "$OS" != "CentOS" ]]; then
-        echo -e "${Error} 很抱歉，你的系统不受支持！${NC}"
-        exit 1
-    fi
-
-    if [[ "$OS" == "CentOS" ]]; then
-        CMD_INSTALL="yum install -y"
-        CMD_UPGRADE="yum update -y"
-        CMD_REMOVE="yum remove -y"
-        systemctl stop firewalld >/dev/null 2>&1
-        ${CMD_UPGRADE}
-        ${CMD_INSTALL} wget xz jq openssl unzip gzip tar
+check_os(){
+    if [[ -e /etc/os-release ]]; then
+        . /etc/os-release
+        release=$ID
+    elif [[ -e /usr/lib/os-release ]]; then
+        . /usr/lib/os-release
+        release=$ID
     else
-        CMD_INSTALL="apt install -y"
-        CMD_UPGRADE="apt update -y"
-        CMD_REMOVE="apt remove -y"
-        CMD_AUTORRM="apt autoremove -y"
-        ${CMD_UPGRADE}
-        ${CMD_INSTALL} wget xz-utils jq openssl unzip gzip tar
+        echo -e "${Error} 检测系统版本失败，请联系作者！" >&2
+        exit 1
     fi
-    timedatectl set-timezone Asia/Shanghai >/dev/null 2>&1
+    echo -e "${Info} 当前系统版本: ${Green}$release${Plain}"
 }
 
-sysArch() {
+check_pmc(){
+    check_os
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
+        updates="apt update -y"
+        installs="apt install -y"
+        apps=("wget" "xz-utils" "jq" "openssl" "unzip" "gzip" "tar")
+    elif [[ "$release" == "alpine" ]]; then
+        updates="apk update"
+        installs="apk add --no-cache"
+        apps=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
+        apps=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
+    elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        apps=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
+    elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
+        updates="pacman -Sy"
+        installs="pacman -S --noconfirm"
+        apps=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
+    elif [[ "$release" == "opensuse" || "$release" == "opensuse-leap" || "$release" == "opensuse-tumbleweed" ]]; then
+        updates="zypper refresh"
+        installs="zypper install -y"
+        apps=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
+    fi
+}
+
+install_base(){
+    check_pmc
+    cmds=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
+    
+    for i in "${!cmds[@]}"; do
+        if ! which "${cmds[i]}" &>/dev/null; then
+            DEPS+=("${apps[i]}")
+        fi
+    done
+    
+    if [ ${#DEPS[@]} -gt 0 ]; then
+        echo -e "${Info} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
+        $updates 
+        $installs "${DEPS[@]}" 
+        echo -e "${Success} 依赖安装完成！${Plain}"
+    else
+        echo -e "${Success} 所有依赖已存在，不需要额外安装。${Plain}"
+    fi
+}
+
+sysArch(){
     uname=$(uname -m)
     if [[ "$uname" == "i386" || "$uname" == "i686" ]]; then
         arch="i686"
@@ -72,82 +117,107 @@ sysArch() {
     fi
 }
 
-check_installed_status() {
+check_installed_status(){
     if [[ ! -e ${FILE} ]]; then
         echo -e "${Error} shadowsocks 没有安装，请检查！"
-        exit 1
+        return 1
     fi
+    return 0
 }
 
-check_status() {
-    status=$(systemctl status shadowsocks | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+check_status(){
+    if systemctl is-active --quiet shadowsocks 2>/dev/null; then
+        status="running"
+    else
+        status="stopped"
+    fi
 }
 
 # 稳定源
-stable_Download() {
-    echo -e "${Info} 开始下载 shadowsocks ……"
-    wget --no-check-certificate -N "${dowloadURL}shadowsocks-${sh_ver}.${arch}-unknown-linux-gnu.tar.xz"
-    if [[ ! -e "shadowsocks-${sh_ver}.${arch}-unknown-linux-gnu.tar.xz" ]]; then
+stable_Download(){
+    local filename="shadowsocks-${sh_ver}.${arch}-unknown-linux-musl.tar.xz"
+    echo -e "${Info} 开始下载 shadowsocks ..."
+    
+    if wget --no-check-certificate -q --show-progress -N "${dowloadURL}${filename}"; then
+        echo -e "${Success} 下载成功！"
+    else
         echo -e "${Error} shadowsocks 下载失败！"
-        return 1 && exit 1
-    else
-        tar -xvf "shadowsocks-${sh_ver}.${arch}-unknown-linux-gnu.tar.xz"
+        return 1
     fi
-    if [[ ! -e "ssserver" ]]; then
+    
+    if [[ ! -f "${filename}" ]]; then
+        echo -e "${Error} 下载文件不存在！"
+        return 1
+    fi
+    
+    tar -xvf "${filename}" 2>/dev/null
+    rm -f "${filename}"
+    
+    if [[ ! -f "ssserver" ]]; then
         echo -e "${Error} shadowsocks 解压失败！"
-        echo -e "${Error} shadowsocks 安装失败！"
-        return 1 && exit 1
-    else
-        rm -rf "shadowsocks-${sh_ver}.${arch}-unknown-linux-gnu.tar.xz"
-        chmod +x ssserver
-        mv -f ssserver "${FILE}"
-        rm -f sslocal ssmanager ssservice ssurl
-        echo -e "${Info} shadowsocks 主程序下载安装完毕！"
-        return 0
+        return 1
     fi
+    
+    chmod +x ssserver
+    mv -f ssserver "${FILE}"
+    rm -f sslocal ssmanager ssservice ssurl 2>/dev/null
+    echo -e "${Success} shadowsocks 主程序安装完成！"
+    return 0
 }
 
 # 备用源
-backup_Download() {
-    new_ver=$(curl -s https://ghproxy.com/https://github.com/shadowsocks/shadowsocks-rust/releases/ | grep -o 'shadowsocks-v\([0-9.]*\)' | grep -o 'v[0-9.]*' | sed 's/\.$//' | head -n 1)
-    backdowloadURL="https://ghproxy.com/github.com/shadowsocks/shadowsocks-rust/releases/download/${new_ver}/"
-    echo -e "${Info} 试图请求 备用源 shadowsocks ……"
-    echo -e "${Info} 开始下载 shadowsocks ……"
-    wget --no-check-certificate -N "${backdowloadURL}shadowsocks-${new_ver}.${arch}-unknown-linux-gnu.tar.xz"
-    if [[ ! -e "shadowsocks-${new_ver}.${arch}-unknown-linux-gnu.tar.xz" ]]; then
-        echo -e "${Error} shadowsocks 下载失败！"
-        exit 1
+backup_Download(){
+    local new_ver=$(curl -s https://ghproxy.com/https://github.com/shadowsocks/shadowsocks-rust/releases/ | grep -o 'shadowsocks-v\([0-9.]*\)' | grep -o 'v[0-9.]*' | sed 's/\.$//' | head -n 1)
+    local backdowloadURL="https://ghproxy.com/github.com/shadowsocks/shadowsocks-rust/releases/download/${new_ver}/"
+    local filename="shadowsocks-${new_ver}.${arch}-unknown-linux-musl.tar.xz"
+    
+    echo -e "${Info} 尝试从备用源下载 shadowsocks ..."
+    
+    if wget --no-check-certificate -q --show-progress -N "${backdowloadURL}${filename}"; then
+        echo -e "${Success} 从备用源下载成功！"
     else
-        tar -xvf "shadowsocks-${new_ver}.${arch}-unknown-linux-gnu.tar.xz"
+        echo -e "${Error} 从备用源下载失败！"
+        return 1
     fi
-    if [[ ! -e "ssserver" ]]; then
+    
+    if [[ ! -f "${filename}" ]]; then
+        echo -e "${Error} 下载文件不存在！"
+        return 1
+    fi
+    
+    tar -xvf "${filename}" 2>/dev/null
+    rm -f "${filename}"
+    
+    if [[ ! -f "ssserver" ]]; then
         echo -e "${Error} shadowsocks 解压失败！"
-        echo -e "${Error} shadowsocks 安装失败！"
-        exit 1
-    else
-        rm -rf "shadowsocks-${new_ver}.${arch}-unknown-linux-gnu.tar.xz"
-        chmod +x ssserver
-        mv -f ssserver "${FILE}"
-        rm -f sslocal ssmanager ssservice ssurl
-        echo -e "${Info} shadowsocks 主程序下载安装完毕！"
-        return 0
+        return 1
     fi
+    
+    chmod +x ssserver
+    mv -f ssserver "${FILE}"
+    rm -f sslocal ssmanager ssservice ssurl 2>/dev/null
+    echo -e "${Success} shadowsocks 主程序安装完成！"
+    return 0
 }
 
-Download() {
-    if [[ ! -e "${FOLDER}" ]]; then
-        mkdir "${FOLDER}"
-        # else
-        # [[ -e "${FILE}" ]] && rm -rf "${FILE}"
+Download(){
+    if [[ ! -d "${FOLDER}" ]]; then
+        mkdir -p "${FOLDER}"
     fi
-    stable_Download
-    if [[ $? != 0 ]]; then
-        backup_Download
+    
+    if ! stable_Download; then
+        echo -e "${Warning} 主源下载失败，尝试备用源..."
+        backup_Download || {
+            echo -e "${Error} 所有下载源均失败！"
+            return 1
+        }
     fi
+    return 0
 }
 
-Service() {
-    echo '[Unit]
+Service(){
+    cat >/etc/systemd/system/shadowsocks.service <<'EOF'
+[Unit]
 Description=Shadowsocks Service
 Documentation=https://github.com/shadowsocks/shadowsocks-rust
 After=network.target
@@ -161,14 +231,15 @@ Restart=always
 RestartSec=3s
 
 [Install]
-WantedBy=multi-user.target' >/etc/systemd/system/shadowsocks.service
+WantedBy=multi-user.target
+EOF
 
     systemctl daemon-reload
     systemctl enable shadowsocks
-    echo -e "${Info} shadowsocks 服务配置完成！"
+    echo -e "${Success} shadowsocks 服务配置完成！"
 }
 
-Write_config() {
+Write_config(){
     cat >${CONF} <<-EOF
 {
     "server": "::",
@@ -176,227 +247,238 @@ Write_config() {
     "method": "${cipher}",
     "password": "${password}",
     "mode": "tcp_and_udp",
-    "timeout":300
+    "timeout": 300
 }
 EOF
+    echo -e "${Success} 配置文件写入完成！"
 }
 
-Read_config() {
-    [[ ! -e ${CONF} ]] && echo -e "${Error} shadowsocks 配置文 件不存在！" && exit 1
-    port=$(cat ${CONF} | jq -r '.server_port')
-    cipher=$(cat ${CONF} | jq -r '.method')
-    password=$(cat ${CONF} | jq -r '.password')
+Read_config(){
+    if [[ ! -e ${CONF} ]]; then
+        echo -e "${Error} shadowsocks 配置文件不存在！"
+        return 1
+    fi
+    port=$(jq -r '.server_port' ${CONF} 2>/dev/null)
+    cipher=$(jq -r '.method' ${CONF} 2>/dev/null)
+    password=$(jq -r '.password' ${CONF} 2>/dev/null)
+    
+    if [[ -z "$port" || -z "$cipher" || -z "$password" ]]; then
+        echo -e "${Error} 读取配置文件失败！"
+        return 1
+    fi
+    return 0
 }
 
-Set_port() {
+Set_port(){
     while true; do
-        echo -e "${Tip} 本步骤不涉及系统防火墙端口操作，请 手动放行相应端口！"
+        echo -e "${Tip} 本步骤不涉及系统防火墙端口操作，请手动放行相应端口！"
         echo -e "请输入 shadowsocks 端口 [10000-65535]"
         read -e -p "(默认：随机生成)：" port
-        [[ -z "$port" ]] && port=$(shuf -i10000-65000 -n1)
-        echo $((port + 0)) &>/dev/null
-        if [[ $? -eq 0 ]]; then
-            if [[ $port -ge 10000 ]] && [[ $port -le 65535 ]]; then
-                echo && echo "=================================="
-                echo -e "端口：${RED_ground} ${port} ${NC}"
-                echo "==================================" && echo
-                break
-            else
-                echo -e "${Error}输入错误，请输入正确的端口。"
-            fi
+        [[ -z "$port" ]] && port=$(shuf -i 10000-65000 -n 1)
+        
+        if [[ "$port" =~ ^[0-9]+$ ]] && [[ $port -ge 10000 ]] && [[ $port -le 65535 ]]; then
+            echo && echo "=================================="
+            echo -e "端口：${Green} ${port} ${Plain}"
+            echo "==================================" && echo
+            break
         else
             echo -e "${Error}输入错误，请输入正确的端口。"
         fi
     done
 }
 
-Set_cipher() {
-    echo -e "请选择 shadowsocks 加密方式
-==================================
- ${GREEN} 1.${NC} chacha20-ietf-poly1305 ${GREEN}(默认)${NC}
- ${GREEN} 2.${NC} aes-128-gcm
- ${GREEN} 3.${NC} aes-256-gcm
-==================================
- ${Tip} AEAD 2022 加密（须v1.15.0及以上版本且密码需经过Base64加密）
-==================================
- ${GREEN} 4.${NC} 2022-blake3-aes-128-gcm
- ${GREEN} 5.${NC} 2022-blake3-aes-256-gcm
- ${GREEN} 6.${NC} 2022-blake3-chacha20-poly1305
-==================================
- ${Tip} 如需其它加密方式请手动修改配置文件 !" && echo
+Set_cipher(){
+    echo -e "请选择 shadowsocks 加密方式"
+    echo -e "=================================="
+    echo -e " ${Green} 1.${Plain} chacha20-ietf-poly1305 ${Green}(默认)${Plain}"
+    echo -e " ${Green} 2.${Plain} aes-128-gcm"
+    echo -e " ${Green} 3.${Plain} aes-256-gcm"
+    echo -e "=================================="
+    echo -e " ${Tip} AEAD 2022 加密（须v1.15.0及以上版本且密码需经过Base64加密）"
+    echo -e "=================================="
+    echo -e " ${Green} 4.${Plain} 2022-blake3-aes-128-gcm"
+    echo -e " ${Green} 5.${Plain} 2022-blake3-aes-256-gcm"
+    echo -e " ${Green} 6.${Plain} 2022-blake3-chacha20-poly1305"
+    echo -e "=================================="
+    echo -e " ${Tip} 如需其它加密方式请手动修改配置文件 !" && echo
+    
     read -e -p "(默认: 1. chacha20-ietf-poly1305)：" cipher
     [[ -z "${cipher}" ]] && cipher="1"
-    if [[ ${cipher} == "1" ]]; then
-        cipher="chacha20-ietf-poly1305"
-    elif [[ ${cipher} == "2" ]]; then
-        cipher="aes-128-gcm"
-    elif [[ ${cipher} == "3" ]]; then
-        cipher="aes-256-gcm"
-    elif [[ ${cipher} == "4" ]]; then
-        cipher="2022-blake3-aes-128-gcm"
-    elif [[ ${cipher} == "5" ]]; then
-        cipher="2022-blake3-aes-256-gcm"
-    elif [[ ${cipher} == "6" ]]; then
-        cipher="2022-blake3-chacha20-poly1305"
-    else
-        cipher="chacha20-ietf-poly1305"
-    fi
+    
+    case "${cipher}" in
+        1) cipher="chacha20-ietf-poly1305" ;;
+        2) cipher="aes-128-gcm" ;;
+        3) cipher="aes-256-gcm" ;;
+        4) cipher="2022-blake3-aes-128-gcm" ;;
+        5) cipher="2022-blake3-aes-256-gcm" ;;
+        6) cipher="2022-blake3-chacha20-poly1305" ;;
+        *) cipher="chacha20-ietf-poly1305" ;;
+    esac
+    
     echo && echo "=================================="
-    echo -e "加密：${RED_ground} ${cipher} ${NC}"
+    echo -e "加密：${Green} ${cipher} ${Plain}"
     echo "==================================" && echo
 }
 
-Set_password() {
-    if [[ "$cipher" != "aes-128-gcm" && "$cipher" != "2022-blake3-aes-128-gcm" ]]; then
-        echo -e "${Tip}shadowsocks密码，请留空随机生成"
-        read -e -p "(请留空)：" password
-        if [[ -z "${password}" ]]; then
+Set_password(){
+    echo -e "${Tip} shadowsocks 密码，请留空随机生成"
+    read -e -p "(请留空)：" password
+    
+    if [[ -z "${password}" ]]; then
+        if [[ "$cipher" == "2022-blake3-aes-128-gcm" || "$cipher" == "2022-blake3-aes-256-gcm" ]]; then
             password=$(openssl rand -base64 32)
-            echo && echo "=================================="
-            echo -e "密码：${RED_ground} ${password} ${NC}"
-            echo "==================================" && echo
         else
-            echo -e "${Error}手动输入密码，不正确的操作！${NC}"
-            exit 1
-        fi
-    else
-        echo -e "${Tip}shadowsocks密码，请留空随机生成"
-        read -e -p "(请留空)：" password
-        if [[ -z "${password}" ]]; then
             password=$(openssl rand -base64 16)
-            echo && echo "=================================="
-            echo -e "密码：${RED_ground} ${password} ${NC}"
-            echo "==================================" && echo
-        else
-            echo -e "${Error}手动输入密码，不正确的操作！${NC}"
-            exit 1
         fi
-    fi
-}
-
-Set() {
-    check_installed_status
-    echo && echo -e "${Tip}你要做什么？
-==================================
- ${GREEN}1.${NC}  修改 端口配置
- ${GREEN}2.${NC}  修改 加密密码
-==================================
- ${GREEN}3.${NC}  修改 全部配置" && echo
-    read -e -p "(默认：取消)：" modify
-    [[ -z "${modify}" ]] && echo -e "${Info}已取消..." && exit 1
-    if [[ "${modify}" == "1" ]]; then
-        Read_config
-        Set_port
-        password=${password}
-        cipher=${cipher}
-        Write_config
-        Restart
-    elif [[ "${modify}" == "2" ]]; then
-        Read_config
-        Set_cipher
-        Set_password
-        port=${port}
-        password=${password}
-        Write_config
-        Restart
-    elif [[ "${modify}" == "3" ]]; then
-        Read_config
-        Set_port
-        Set_cipher
-        Set_password
-        Write_config
-        Restart
+        echo && echo "=================================="
+        echo -e "密码：${Green} ${password} ${Plain}"
+        echo "==================================" && echo
     else
-        echo -e "${Error} 请输入正确的数字(1-5)" && exit 1
+        echo -e "${Warning} 手动输入密码，不推荐！请确保密码符合要求。${Plain}"
     fi
 }
 
-Install() {
-    [[ -e ${FILE} ]] && echo -e "${Error} 检测到 shadowsocks 已安装！" && exit 1
-    echo -e "${Info} 开始安装 依赖..."
-    Installation_dependency
+Set(){
+    check_installed_status || return 1
+    
+    echo && echo -e "${Tip} 你要做什么？"
+    echo -e "=================================="
+    echo -e " ${Green}1.${Plain}  修改 端口配置"
+    echo -e " ${Green}2.${Plain}  修改 加密密码"
+    echo -e "=================================="
+    echo -e " ${Green}3.${Plain}  修改 全部配置"
+    echo -e "=================================="
+    read -e -p "(默认：取消)：" modify
+    [[ -z "${modify}" ]] && echo -e "${Info}已取消..." && return 1
+    
+    case "${modify}" in
+        1)
+            Read_config || return 1
+            Set_port
+            Write_config
+            Restart
+            ;;
+        2)
+            Read_config || return 1
+            Set_cipher
+            Set_password
+            Write_config
+            Restart
+            ;;
+        3)
+            Read_config || return 1
+            Set_port
+            Set_cipher
+            Set_password
+            Write_config
+            Restart
+            ;;
+        *)
+            echo -e "${Error} 请输入正确的数字(1-3)" && return 1
+            ;;
+    esac
+}
+
+Install(){
+    if [[ -e ${FILE} ]]; then
+        echo -e "${Error} 检测到 shadowsocks 已安装！"
+        return 1
+    fi
+    
+    echo -e "${Info} 开始安装依赖..."
+    install_base
+    sysArch
+    echo -e "${Info} 系统架构: ${Green}${arch}${Plain}"
+    
     echo -e "${Info} 开始下载/安装..."
-    Download
-    echo -e "${Info} 开始设置 配置..."
+    Download || return 1
+    
+    echo -e "${Info} 开始设置配置..."
     Set_port
     Set_cipher
     Set_password
-    echo -e "${Info} 开始写入 配置文件..."
+    
+    echo -e "${Info} 开始写入配置文件..."
     Write_config
+    
     echo -e "${Info} 开始安装系统服务脚本..."
     Service
-    echo -e "${Info} 所有步骤 安装完毕，开始启动..."
+    
+    echo -e "${Info} 所有步骤安装完毕，开始启动..."
     Start
-    Start_Menu
 }
 
-Start() {
-    check_installed_status
+Start(){
+    check_installed_status || return 1
     check_status
-    [[ "$status" == "running" ]] && echo -e "${Info} shadowsocks 已在运行 ！" && exit 1
+    if [[ "$status" == "running" ]]; then
+        echo -e "${Info} shadowsocks 已在运行！"
+        return 0
+    fi
+    
     systemctl start shadowsocks
+    sleep 2
+    
     check_status
-    [[ "$status" == "running" ]] && echo -e "${Info} shadowsocks 启动成功 ！"
-    sleep 1s
-    Start_Menu
+    if [[ "$status" == "running" ]]; then
+        echo -e "${Success} shadowsocks 启动成功！"
+    else
+        echo -e "${Error} shadowsocks 启动失败！请检查日志: journalctl -u shadowsocks -f"
+    fi
 }
 
-Stop() {
-    check_installed_status
+Stop(){
+    check_installed_status || return 1
     check_status
-    [[ !"$status" == "running" ]] && echo -e "${Error} shadowsocks 没有运行，请检查！" && exit 1
+    if [[ "$status" != "running" ]]; then
+        echo -e "${Error} shadowsocks 没有运行！"
+        return 1
+    fi
+    
     systemctl stop shadowsocks
-    sleep 1s
-    Start_Menu
+    check_status
+    if [[ "$status" == "stopped" ]]; then
+        echo -e "${Success} shadowsocks 已停止！"
+    fi
 }
 
-Restart() {
-    check_installed_status
-    systemctl restart shadowsocks
+Restart(){
+    check_installed_status || return 1
     echo -e "${Info} shadowsocks 重启中... "
-    sleep 1s
-    Start_Menu
+    systemctl restart shadowsocks
+    sleep 2
+    check_status
+    if [[ "$status" == "running" ]]; then
+        echo -e "${Success} shadowsocks 重启成功！"
+    else
+        echo -e "${Error} shadowsocks 重启失败！请检查日志。"
+    fi
 }
 
-Uninstall() {
-    check_installed_status
-    echo -e "${Tip}确定要卸载 shadowsocks ? (y/N)"
+Uninstall(){
+    check_installed_status || return 1
+    
+    echo -e "${Warning} 确定要卸载 shadowsocks ? (y/N)"
     echo
     read -e -p "(默认：n)：" unyn
     [[ -z ${unyn} ]] && unyn="n"
-    if [[ ${unyn} == [Yy] ]]; then
-        check_status
-        [[ "$status" == "running" ]] && systemctl stop shadowsocks
-        systemctl disable shadowsocks
-        rm -rf "${FOLDER}"
-        rm -rf "${FILE}"
-        rm -f /etc/systemd/system/shadowsocks.service
-        echo && echo -e "${Info}shadowsocks 卸载完成！" && echo
-    else
+    
+    if [[ ${unyn} != [Yy] ]]; then
         echo && echo -e "${Info}卸载已取消..." && echo
+        return 0
     fi
-    sleep 1s
-    Start_Menu
-}
-
-getipv4() {
-    ipv4=$(wget -qO- -4 -t1 -T2 ipinfo.io/ip)
-    if [[ -z "${ipv4}" ]]; then
-        ipv4=$(wget -qO- -4 -t1 -T2 api.ip.sb/ip)
-        if [[ -z "${ipv4}" ]]; then
-            ipv4=$(wget -qO- -4 -t1 -T2 members.3322.org/dyndns/getip)
-            if [[ -z "${ipv4}" ]]; then
-                ipv4="IPv4_Error"
-            fi
-        fi
-    fi
-}
-
-getipv6() {
-    ipv6=$(wget -qO- -6 -t1 -T2 ifconfig.co)
-    if [[ -z "${ipv6}" ]]; then
-        ipv6="IPv6_Error"
-    fi
+    
+    check_status
+    [[ "$status" == "running" ]] && systemctl stop shadowsocks
+    systemctl disable shadowsocks
+    
+    rm -rf "${FOLDER}"
+    rm -f "${FILE}"
+    rm -f /etc/systemd/system/shadowsocks.service
+    
+    systemctl daemon-reload
+    
+    echo && echo -e "${Success}shadowsocks 卸载完成！" && exit
 }
 
 get_country_emoji() {
@@ -457,144 +539,165 @@ get_country_emoji() {
     echo "$emoji"
 }
 
-urlsafe_base64() {
-    date=$(echo -n "$1" | base64 | sed ':a;N;s/\n/ /g;ta' | sed 's/ //g;s/=//g;s/+/-/g;s/\//_/g')
-    echo -e "${date}"
+get_public_ip(){
+    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|enp)'))
+    IP_API=(
+        "http://ip.gs"
+        "http://ip.sb"
+        "http://ident.me"
+        "http://ifconfig.me"
+        "http://api.ipify.org"
+        "http://icanhazip.com"
+    )
+
+    for iface in "${InFaces[@]}"; do
+        for ip_api in "${IP_API[@]}"; do
+            IPv4=$(curl -s4 --max-time 2 --interface "$iface" "$ip_api")
+            IPv6=$(curl -s6 --max-time 2 --interface "$iface" "$ip_api")
+
+            if [[ -n "$IPv4" || -n "$IPv6" ]]; then # 检查是否获取到IP地址
+                break 2 # 获取到任一IP类型停止循环
+            fi
+        done
+    done
 }
 
-Link_QR() {
-    if [[ "${ipv4}" != "IPv4_Error" ]]; then
-        country_emoji=$(get_country_emoji "${ipv4}")
-        SSbase64=$(urlsafe_base64 "${cipher}:${password}")
-        SSurl="ss://${SSbase64}@${ipv4}:${port}#${country_emoji}"
-        link_ipv4=" 链接  [IPv4]：${RED}${SSurl}${NC}"
+urlsafe_base64(){
+    echo -n "$1" | base64 | tr -d '\n' | tr -d '=' | tr '+/' '-_'
+}
+
+Link_QR(){
+    local base64_ss=$(urlsafe_base64 "${cipher}:${password}")
+    
+    # 生成 IPv4 链接
+    if [[ -n "${IPv4}" && "${IPv4}" != "IPv4_Error" ]]; then
+        country_emoji=$(get_country_emoji "${IPv4}")
+        link_IPv4="ss://${base64_ss}@${IPv4}:${port}#${country_emoji}"
+    else
+        link_IPv4=""
     fi
-    if [[ "${ipv6}" != "IPv6_Error" ]]; then
-        country_emoji=$(get_country_emoji "${ipv6}")
-        SSbase64=$(urlsafe_base64 "${cipher}:${password}")
-        SSurl="ss://${SSbase64}@${ipv6}:${port}#${country_emoji}"
-        link_ipv6=" 链接  [IPv6]：${RED}${SSurl}${NC}"
+    
+    # 生成 IPv6 链接
+    if [[ -n "${IPv6}" && "${IPv6}" != "IPv6_Error" ]]; then
+        country_emoji=$(get_country_emoji "${IPv6}")
+        link_IPv6="ss://${base64_ss}@${IPv6}:${port}#${country_emoji}"
+    else
+        link_IPv6=""
     fi
 }
 
-View() {
-    check_installed_status
-    Read_config
-    getipv4
-    getipv6
+View(){
+    check_installed_status || return 1
+    Read_config || return 1
+    get_public_ip
     Link_QR
+    
     clear && echo
-    echo -e "shadowsocks 配置："
-    echo -e "——————————————————————————————————"
-    [[ "${ipv4}" != "IPv4_Error" ]] && echo -e " 地址：${GREEN}${ipv4}${NC}"
-    [[ "${ipv6}" != "IPv6_Error" ]] && echo -e " 地址：${GREEN}${ipv6}${NC}"
-    echo -e " 端口：${GREEN}${port}${NC}"
-    echo -e " 密码：${GREEN}${password}${NC}"
-    echo -e " 加密：${GREEN}${cipher}${NC}"
-    echo -e "——————————————————————————————————"
-    [[ ! -z "${link_ipv4}" ]] && echo -e "${link_ipv4}"
-    [[ ! -z "${link_ipv6}" ]] && echo -e "${link_ipv6}"
-    echo -e "——————————————————————————————————"
-    Before_Start_Menu
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    echo -e "${Green}               shadowsocks 配置信息                      ${Plain}"
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    
+    [[ ! -z "${link_IPv4}" ]] && echo -e "  ${Green}地址[IPv4]:${Plain} ${IPv4}"
+    [[ ! -z "${link_IPv6}" ]] && echo -e "  ${Green}地址[IPv6]:${Plain} ${IPv6}"
+    echo -e "  ${Green}端口:${Plain} ${port}"
+    echo -e "  ${Green}密码:${Plain} ${password}"
+    echo -e "  ${Green}加密:${Plain} ${cipher}"
+    echo -e "${Green}─────────────────────────────────────────────────────${Plain}"
+    
+    [[ ! -z "${link_IPv4}" ]] && echo -e "  ${Green}链接[IPv4]:${Plain} ${Yellow}${link_IPv4}${Plain}"
+    [[ ! -z "${link_IPv6}" ]] && echo -e "  ${Green}链接[IPv6]:${Plain} ${Yellow}${link_IPv6}${Plain}"
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    
+    echo
+    echo -e "${Tip} 按回车返回主菜单"
+    read temp
 }
 
-Status() {
-    echo -e "${Info} 获取 shadowsocks 活动日志 ……"
+Status(){
+    echo -e "${Info} 获取 shadowsocks 运行状态 ..."
     echo -e "${Tip} 返回主菜单请按 q ！"
-    systemctl status shadowsocks
-    Start_Menu
+    systemctl status shadowsocks --no-pager -l
+    echo
+    echo -e "${Tip} 按回车返回主菜单"
+    read temp
 }
 
-Before_Start_Menu() {
-    echo && echo -n -e "${yellow}* 按回车返回主菜单 *${plain}" && read temp
-    Start_Menu
-}
-
-Start_Menu() {
+Start_Menu(){
     clear
     check_root
     sysArch
-    action=$1
-    clear && echo -e "==================================
-shadowsocks 管理脚本 ${RED}[${sh_ver}]${NC}
-    作者: ${GREEN}你挺能闹啊${NC}🍏
- 群组: ${GREEN}https://t.me/fun513${NC}
+    
+    echo -e "==================================
+shadowsocks 管理脚本 ${Red}[${sh_ver}]${Plain}
+    作者: ${Green}你挺能闹啊${Plain}🍏
+ 群组: ${Green}https://t.me/fun513${Plain}
 ==================================
- ${GREEN} 1.${NC} 安装 shadowsocks
- ${GREEN} 2. ${RED}卸载 shadowsocks${NC}
+ ${Green} 1.${Plain} 安装 shadowsocks
+ ${Green} 2. ${Red}卸载 shadowsocks${Plain}
 ——————————————————————————————————
- ${GREEN} 3.${NC} 启动 shadowsocks
- ${GREEN} 4.${NC} 停止 shadowsocks
- ${GREEN} 5.${NC} 重启 shadowsocks
+ ${Green} 3.${Plain} 启动 shadowsocks
+ ${Green} 4.${Plain} 停止 shadowsocks
+ ${Green} 5.${Plain} 重启 shadowsocks
 ——————————————————————————————————
- ${GREEN} 6.${NC} 修改 配置信息
- ${GREEN} 7.${NC} 查看 配置信息
- ${GREEN} 8.${NC} 查看 运行状态
+ ${Green} 6.${Plain} 修改 配置信息
+ ${Green} 7.${Plain} 查看 配置信息
+ ${Green} 8.${Plain} 查看 运行状态
 ——————————————————————————————————
- ${GREEN} 0.${NC} 退出脚本
+ ${Green} 0.${Plain} 退出脚本
 ==================================" && echo
+
     if [[ -e ${FILE} ]]; then
         check_status
         if [[ "$status" == "running" ]]; then
-            echo -e " 当前状态：${GREEN}已安装${NC} 并 ${GREEN}已启动${NC}"
-            Read_config
-            getipv4
-            getipv6
-            Link_QR
-            echo
-            echo -e "shadowsocks 配置："
-            echo -e "——————————————————————————————————"
-            [[ "${ipv4}" != "IPv4_Error" ]] && echo -e " 地址：${GREEN}${ipv4}${NC}"
-            [[ "${ipv6}" != "IPv6_Error" ]] && echo -e " 地址：${GREEN}${ipv6}${NC}"
-            echo -e " 端口：${GREEN}${port}${NC}"
-            echo -e " 密码：${GREEN}${password}${NC}"
-            echo -e " 加密：${GREEN}${cipher}${NC}"
-            echo -e "——————————————————————————————————"
-            [[ ! -z "${link_ipv4}" ]] && echo -e "${link_ipv4}"
-            [[ ! -z "${link_ipv6}" ]] && echo -e "${link_ipv6}"
-            echo -e "——————————————————————————————————"
+            echo -e " 当前状态：${Green}已安装${Plain} 并 ${Green}已启动${Plain}"
+            Read_config 2>/dev/null
+            if [[ $? -eq 0 ]]; then
+                get_public_ip
+                Link_QR
+                echo
+                echo -e "${Green}shadowsocks 配置：${Plain}"
+                echo -e "${Green}─────────────────────────────────────────────────────${Plain}"
+                [[ "${IPv4}" != "IPv4_Error" ]] && echo -e "  ${Green}地址[IPv4]:${Plain} ${IPv4}"
+                [[ "${IPv6}" != "IPv6_Error" ]] && echo -e "  ${Green}地址[IPv6]:${Plain} ${IPv6}"
+                echo -e "  ${Green}端口:${Plain} ${port}"
+                echo -e "  ${Green}密码:${Plain} ${password}"
+                echo -e "  ${Green}加密:${Plain} ${cipher}"
+                echo -e "${Green}─────────────────────────────────────────────────────${Plain}"
+                [[ ! -z "${link_IPv4}" ]] && echo -e "${Green}IPv4链接${Plain}: ${Red}${link_IPv4}${Plain}"
+                [[ ! -z "${link_IPv6}" ]] && echo -e "${Green}IPv6链接${Plain}: ${Red}${link_IPv6}${Plain}"
+                echo -e "${Green}─────────────────────────────────────────────────────${Plain}"
+            fi
         else
-            echo -e " 当前状态：${GREEN}已安装${NC} 但 ${RED}未启动${NC}"
+            echo -e " 当前状态：${Green}已安装${Plain} 但 ${Red}未启动${Plain}"
         fi
     else
-        echo -e " 当前状态：${RED}未安装${NC}"
+        echo -e " 当前状态：${Red}未安装${Plain}"
     fi
+    
     echo
     read -e -p " 请输入数字 [0-8]：" num
+    
     case "$num" in
-    1)
-        Install
-        ;;
-    2)
-        Uninstall
-        ;;
-    3)
-        Start
-        ;;
-    4)
-        Stop
-        ;;
-    5)
-        Restart
-        ;;
-    6)
-        Set
-        ;;
-    7)
-        View
-        ;;
-    8)
-        Status
-        ;;
-    0)
-        echo
-        exit 1
-        ;;
-    *)
-        echo -e "${Error}请输入正确数字 [0-8]${NC}"
-        echo
-        exit 1
-        ;;
+        1) Install ;;
+        2) Uninstall ;;
+        3) Start ;;
+        4) Stop ;;
+        5) Restart ;;
+        6) Set ;;
+        7) View ;;
+        8) Status ;;
+        0)
+            echo -e "${Tip} 感谢使用，再见！${Plain}"
+            exit 0
+            ;;
+        *)
+            echo -e "${Error}请输入正确数字 [0-8]${Plain}"
+            exit 1
+            ;;
     esac
+    
+    # 循环回到菜单
+    Start_Menu
 }
+
 Start_Menu
