@@ -334,7 +334,7 @@ install_bbr(){
 
 update_shell(){
     echo -e "${Info} 正在更新管理脚本..."
-    wget -O /usr/bin/x-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
+    wget -O /usr/bin/x-ui --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/x-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         echo -e "${Error} 下载脚本失败，请检查本机能否连接 Github"
