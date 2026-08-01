@@ -53,48 +53,56 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add --no-cache"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
         updates="pacman -Sy"
         installs="pacman -S --noconfirm"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "opensuse" || "$release" == "opensuse-leap" || "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("curl" "wget" "tar")
+    DEPS=()  # 重要：初始化数组
+    cmds=("wget" "curl" "tar" "openssl" )
 
     for i in "${!cmds[@]}"; do
-        if ! which "${cmds[i]}" &>/dev/null; then
+        if ! command -v "${cmds[i]}" &>/dev/null; then
             DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Info} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
+        echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
         echo -e "${Success} 依赖安装完成！${Plain}"
     else
         echo -e "${Success} 所有依赖已存在，不需要额外安装。${Plain}"
     fi
+}
+
+gen_random_string(){
+    local length="$1"
+    openssl rand -base64 $((length * 2)) \
+        | tr -dc 'a-zA-Z0-9' \
+        | head -c "$length"
 }
 
 config_after_install(){
@@ -136,28 +144,48 @@ config_after_install(){
 
     if [ ! -f "/etc/x-ui/x-ui.db" ]; then
         local config_webBasePath=app
-        local config_username=admin
-        local config_password=admin
 
-        echo ""
         local db_label="${Green}SQLite${Plain} (/etc/x-ui/x-ui.db)"
 
-        read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
-        if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
-            while true; do
-                read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
-                if [[ "$config_port" =~ ^[0-9]+$ ]] && [ "$config_port" -ge 10000 ] && [ "$config_port" -le 65535 ]; then
-                    echo -e "${Info} 面板端口: ${Green}${config_port}${Plain}"
-                    break
-                else
-                    echo -e "${Error} 无效端口，请输入 10000-65535 之间的数字。${Plain}"
-                fi
-            done
-        else
-            local config_port=$(shuf -i 10000-65535 -n 1)
-            echo -e "${Info} 已生成随机端口: ${Green}${config_port}${Plain}"
-        fi
+        read -rp "$(echo -e "${Tip} 是否自定义面板设置？(y/N, 默认N): ")" set_config
+        if [[ "${set_config}" == "y" || "${set_config}" == "Y" ]]; then
 
+            # 设置端口
+            read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
+            if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
+                while true; do
+                    read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
+                    if [[ "$config_port" =~ ^[0-9]+$ ]] && [ "$config_port" -ge 10000 ] && [ "$config_port" -le 65535 ]; then
+                        echo -e "${Info} 面板端口: ${Green}${config_port}${Plain}"
+                        break
+                    else
+                        echo -e "${Error} 无效输入，请输入 10000-65535 之间的数字。${Plain}"
+                    fi
+                done
+            else
+                config_port=$(shuf -i 10000-65535 -n 1)
+                echo -e "${Info} 已生成随机端口: ${Green}${config_port}${Plain}"
+            fi
+
+            # 设置用户名
+            read -rp "$(echo -e "${Tip} 请设置您的用户名 (留空将自动生成): ")" config_username
+            if [[ -z "${config_username}" ]]; then
+                config_username=$(gen_random_string 7)
+                echo -e "${Info} 您的用户名将设定为: ${Green}${config_username}${Plain}"
+            fi
+        
+            # 设置密码
+            read -rp "$(echo -e "${Tip} 请设置您的用户密码 (留空将自动生成): ")" config_password
+            if [[ -z "${config_password}" ]]; then
+                config_password=$(gen_random_string 9)
+                echo -e "${Info} 您的用户密码将设定为: ${Green}${config_password}${Plain}"
+            fi
+        else
+            config_port=$(shuf -i 10000-65535 -n 1)
+            local config_username=admin
+            local config_password=admin
+        fi
+        
         echo -e "${Info} 正在应用面板配置..."
         ${xui_folder}/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}" > /dev/null 2>&1
 
@@ -404,7 +432,7 @@ install_x-ui(){
     fi
 
     echo -e "${Success} x-ui 安装完成.${Plain}"
-    echo -e 
+    echo
     x-ui help
 }
 
