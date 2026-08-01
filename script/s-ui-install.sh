@@ -288,7 +288,7 @@ install_s-ui(){
     prepare_services
     systemctl enable s-ui --now
     echo -e ""
-    echo -e "${Green}s-ui v${last_version}${Plain} 安装完成，现在已经正常运行了..."
+    echo -e "${Green}s-ui ${last_version}${Plain} 安装完成，现在已经正常运行了..."
     echo -e "${Info} 您可以通过以下 URL 访问面板:"${Green}
     /usr/local/s-ui/sui uri
     echo -e "${Plain}"
