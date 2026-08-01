@@ -211,19 +211,19 @@ config_after_install(){
         echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
         echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}x-ui${Plain} 命令。${Plain}"
     else
-        local existing_hasDefaultCredential=$(${xui_folder}/x-ui setting -show true | grep -Eo 'hasDefaultCredential: .+' | awk '{print $2}')
-        local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
-        local existing_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
-        
-        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
-            echo -e "${Green}###############################################${Plain}"
-            echo -e "${Green}用户名: ${Plain}admin"
-            echo -e "${Green}密码:   ${Plain}admin"
-            echo -e "${Green}###############################################${Plain}"
-        else
-            echo -e "${Success} 用户名、密码和 WebBasePath 已正确设置。${Plain}"
-        fi
-        echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${existing_webBasePath}${Plain}"
+        local config_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $NF}')
+        local config_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $NF}' | sed -e 's/^\///' -e 's/\/$//')
+        echo ""
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}                    面板升级完成！                      ${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}端口:       ${Plain}${config_port}"
+        echo -e "${Green}Web根路径:  ${Plain}${config_webBasePath}"
+        echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_webBasePath}${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+        echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+        echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}s-ui${Plain} 命令。${Plain}"
     fi
 
     # 确保面板监听所有接口
