@@ -86,16 +86,17 @@ check_pmc(){
 
 install_base(){
     check_pmc
+    DEPS=()  # 重要：初始化数组
     cmds=("wget" "xz" "jq" "openssl" "unzip" "gzip" "tar")
-    
+
     for i in "${!cmds[@]}"; do
-        if ! which "${cmds[i]}" &>/dev/null; then
+        if ! command -v "${cmds[i]}" &>/dev/null; then
             DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Info} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
+        echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
         echo -e "${Success} 依赖安装完成！${Plain}"
