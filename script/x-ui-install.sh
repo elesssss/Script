@@ -99,13 +99,6 @@ install_base(){
     fi
 }
 
-gen_random_string(){
-    local length="$1"
-    openssl rand -base64 $((length * 2)) \
-        | tr -dc 'a-zA-Z0-9' \
-        | head -c "$length"
-}
-
 config_after_install(){
     echo -e "${Info} 正在配置面板设置..."
 
