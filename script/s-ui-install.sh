@@ -18,8 +18,6 @@ Warning="${Yellow}[警告]${Plain}"
 Success="${Green}[成功]${Plain}"
 Tip="${Yellow}[提示]${Plain}"
 
-cur_dir=$(pwd)
-
 # check root
 [[ $EUID -ne 0 ]] && echo -e "${Error} 请以root权限运行此脚本 \n " && exit 1
 
