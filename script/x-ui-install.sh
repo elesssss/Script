@@ -21,6 +21,9 @@ Tip="${Yellow}[提示]${Plain}"
 xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
 xui_service="${XUI_SERVICE:=/etc/systemd/system}"
 
+# check root
+[[ $EUID -ne 0 ]] && echo -e "${Error} 请以root权限运行此脚本 \n " && exit 1
+
 arch(){
     case "$(uname -m)" in
         x86_64 | x64 | amd64) echo 'amd64' ;;
