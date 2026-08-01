@@ -33,30 +33,40 @@ check_release(){
     elif [[ -e /usr/lib/os-release ]]; then
         . /usr/lib/os-release
         release=$ID
-    fi
-    os_version=$(echo $VERSION_ID | cut -d. -f1,2)
-
-    if [[ "${release}" == "ol" ]]; then
-        release=oracle
-    elif [[ ! "${release}" =~ ^(kali|centos|ubuntu|fedora|debian|almalinux|rocky|alpine)$ ]]; then
-        echo -e "${Error} 抱歉，此脚本不支持您的操作系统。"
-        echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
-        echo -e "-${Red} Ubuntu ${Plain}"
-        echo -e "-${Red} Debian ${Plain}"
-        echo -e "-${Red} CentOS ${Plain}"
-        echo -e "-${Red} Fedora ${Plain}"
-        echo -e "-${Red} Kali ${Plain}"
-        echo -e "-${Red} AlmaLinux ${Plain}"
-        echo -e "-${Red} Rocky Linux ${Plain}"
-        echo -e "-${Red} Oracle Linux ${Plain}"
-        echo -e "-${Red} Alpine Linux ${Plain}"
+    else
+        echo -e "${Error} 检测系统版本失败，请联系作者！" >&2
         exit 1
     fi
+    os_version=$(echo $VERSION_ID | cut -d. -f1,2 2>/dev/null)
+
+    # 处理 Oracle Linux
+    if [[ "${release}" == "ol" ]]; then
+        release="oracle"
+    fi
+    
+    # 检查是否支持
+    if [[ ! "${release}" =~ ^(kali|centos|ubuntu|fedora|debian|almalinux|rocky|alpine|oracle)$ ]]; then
+        echo -e "${Error} 抱歉，此脚本不支持您的操作系统: ${release}"
+        echo -e "${Info} 请确保您使用的是以下支持的操作系统之一："
+        echo -e "- ${Red}Ubuntu${Plain}"
+        echo -e "- ${Red}Debian${Plain}"
+        echo -e "- ${Red}CentOS${Plain}"
+        echo -e "- ${Red}Fedora${Plain}"
+        echo -e "- ${Red}Kali${Plain}"
+        echo -e "- ${Red}AlmaLinux${Plain}"
+        echo -e "- ${Red}Rocky Linux${Plain}"
+        echo -e "- ${Red}Oracle Linux${Plain}"
+        echo -e "- ${Red}Alpine Linux${Plain}"
+        exit 1
+    fi
+    
+    echo -e "${Info} 当前系统版本: ${Green}${release} ${os_version}${Plain}"
 }
 
 check_pmc(){
-    check_release
-    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+    check_release  # 确保 release 和 os_version 已被赋值
+    
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
         apps=("openssl" "python3" "xxd" "procps" "iproute2")
@@ -64,39 +74,46 @@ check_pmc(){
         updates="apk update -f"
         installs="apk add -f"
         apps=("openssl" "python3" "py3-cryptography" "xxd" "procps" "iproute2")
-    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
-        apps=("openssl" "python3.11" "vim-common" "procps-ng" "iproute")
-    elif [[ "$release" == "centos" ]]; then
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
         apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
-    elif [[ "$release" == "fedora" ]]; then
+    elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
         apps=("openssl" "python3" "vim-common" "procps-ng" "iproute")
+    elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
+        updates="pacman -Syu"
+        installs="pacman -S --noconfirm"
+        apps=("openssl" "python3" "xxd" "procps-ng" "iproute2")
+    elif [[ "$release" == "opensuse" || "$release" == "opensuse-leap" || "$release" == "opensuse-tumbleweed" ]]; then
+        updates="zypper refresh"
+        installs="zypper install -y"
+        apps=("openssl" "python3" "xxd" "procps" "iproute2")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("openssl" "python3" "xxd" "ps" "ip")
-    echo -e "${Info} 你的系统是${Red} $release $os_version ${Plain}"
+    DEPS=()  # 重要：初始化数组
+    
+    local cmds=("openssl" "python3" "xxd" "ps" "ip")
+    echo -e "${Info} 你的系统是 ${Red}${release} ${os_version}${Plain}"
     echo
 
     for i in "${!cmds[@]}"; do
-        if ! which "${cmds[i]}" &>/dev/null; then
+        if ! command -v "${cmds[i]}" &>/dev/null; then
             DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${yellow}[Tip]安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
+        echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
+        echo -e "${Success} 依赖安装完成！${Plain}"
     else
-        echo -e "${Info} 所有依赖已存在，不需要额外安装。"
+        echo -e "${Success} 所有依赖已存在，不需要额外安装。${Plain}"
     fi
 }
 
