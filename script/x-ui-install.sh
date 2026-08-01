@@ -53,33 +53,33 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("curl" "wget" "tar" "jq")
+        ("wget" "curl" "tar")
     elif [[ "$release" == "alpine" ]]; then
-        updates="apk update -f"
-        installs="apk add -f"
-        apps=("curl" "wget" "tar" "jq")
+        updates="apk update"
+        installs="apk add --no-cache"
+        ("wget" "curl" "tar")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        apps=("curl" "wget" "tar" "jq")
+        ("wget" "curl" "tar")
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("curl" "wget" "tar" "jq")
+        ("wget" "curl" "tar")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
-        updates="pacman -Syu"
-        installs="pacman -Syu --noconfirm"
-        apps=("curl" "wget" "tar" "jq")
-    elif [[ "$release" == "opensuse-tumbleweed" ]]; then
+        updates="pacman -Sy"
+        installs="pacman -S --noconfirm"
+        ("wget" "curl" "tar")
+    elif [[ "$release" == "opensuse" || "$release" == "opensuse-leap" || "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
-        installs="zypper -q install -y"
-        apps=("curl" "wget" "tar" "jq")
+        installs="zypper install -y"
+        ("wget" "curl" "tar")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("curl" "wget" "tar" "jq")
+    cmds=("curl" "wget" "tar")
 
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
