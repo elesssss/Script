@@ -214,7 +214,7 @@ config_after_install(){
         read -rp "$(echo -e "${Tip} 是否自定义面板设置？(y/N, 默认N): ")" set_config
         if [[ "${set_config}" == "y" || "${set_config}" == "Y" ]]; then
             # 设置端口
-            read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
+            read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 留空将自动生成): ")" config_confirm
             if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
                 while true; do
                     read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
