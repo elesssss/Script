@@ -55,33 +55,33 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("curl" "tar" "wget")
+        apps=("curl" "wget" "tar" "jq")
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update -f"
         installs="apk add -f"
-        apps=("curl" "tar" "wget")
+        apps=("curl" "wget" "tar" "jq")
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        apps=("curl" "tar" "wget")
+        apps=("curl" "wget" "tar" "jq")
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        apps=("curl" "tar" "wget")
+        apps=("curl" "wget" "tar" "jq")
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
         updates="pacman -Syu"
         installs="pacman -Syu --noconfirm"
-        apps=("curl" "tar" "wget")
+        apps=("curl" "wget" "tar" "jq")
     elif [[ "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper -q install -y"
-        apps=("curl" "tar" "wget")
+        apps=("curl" "wget" "tar" "jq")
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("curl" "tar" "wget")
+    cmds=("curl" "wget" "tar" "jq")
 
     for i in "${!cmds[@]}"; do
         if ! which "${cmds[i]}" &>/dev/null; then
@@ -97,6 +97,13 @@ install_base(){
     else
         echo -e "${Success} 所有依赖已存在，不需要额外安装。${Plain}"
     fi
+}
+
+gen_random_string(){
+    local length="$1"
+    openssl rand -base64 $((length * 2)) \
+        | tr -dc 'a-zA-Z0-9' \
+        | head -c "$length"
 }
 
 config_after_install(){
