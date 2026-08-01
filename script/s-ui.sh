@@ -320,7 +320,7 @@ show_log(){
 
 update_shell(){
     echo -e "${Info} 正在更新管理脚本...${Plain}"
-    wget -O /usr/bin/s-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
+    wget -O /usr/bin/s-ui --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         echo -e "${Error} 无法下载脚本，请检查机器是否能连接GitHub${Plain}"
