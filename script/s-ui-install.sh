@@ -114,26 +114,30 @@ check_release(){
 
 check_pmc(){
     check_release
-    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" ]]; then
+    if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        apps=("wget" "curl" "tar")
-    elif [[ "$release" == "opensuse-tumbleweed" ]]; then
+        ("wget" "curl" "tar")
+    elif [[ "$release" == "alpine" ]]; then
+        updates="apk update"
+        installs="apk add --no-cache"
+        ("wget" "curl" "tar")
+    elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
+        updates="yum update -y"
+        installs="yum install -y"
+        ("wget" "curl" "tar")
+    elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
+        updates="dnf update -y"
+        installs="dnf install -y"
+        ("wget" "curl" "tar")
+    elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
+        updates="pacman -Sy"
+        installs="pacman -S --noconfirm"
+        ("wget" "curl" "tar")
+    elif [[ "$release" == "opensuse" || "$release" == "opensuse-leap" || "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper install -y"
-        apps=("wget" "curl" "tar")
-    elif [[ "$release" == "almalinux" || "$release" == "centos" || "$release" == "rocky" || "$release" == "oracle" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
-        apps=("wget" "curl" "tar")
-    elif [[ "$release" == "fedora" ]]; then
-        updates="dnf update -y"
-        installs="dnf install -y"
-        apps=("wget" "curl" "tar")
-    elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch"  ]]; then
-        updates="pacman -Syu"
-        installs="pacman -Syu --noconfirm"
-        apps=("wget" "curl" "tar")
+        ("wget" "curl" "tar")
     fi
 }
 
