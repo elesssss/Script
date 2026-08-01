@@ -34,7 +34,7 @@ arch(){
     esac
 }
 
-check_os(){
+check_release(){
     if [[ -e /etc/os-release ]]; then
         . /etc/os-release
         release=$ID
@@ -49,7 +49,7 @@ check_os(){
 }
 
 check_pmc(){
-    check_os
+    check_release
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
