@@ -18,8 +18,6 @@ Warning="${Yellow}[警告]${Plain}"
 Success="${Green}[成功]${Plain}"
 Tip="${Yellow}[提示]${Plain}"
 
-cur_dir=$(pwd)
-
 xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
 xui_service="${XUI_SERVICE:=/etc/systemd/system}"
 
