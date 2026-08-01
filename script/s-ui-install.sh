@@ -252,7 +252,7 @@ install_s-ui(){
             exit 1
         fi
         echo -e "${Success} 已获取 S-UI 最新版本: ${Green}${last_version}${Plain}，开始安装..."
-        wget -N --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz
+        wget --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${Error} 下载 s-ui 失败，请确保您的服务器能够访问 GitHub ${Plain}"
             exit 1
@@ -261,7 +261,7 @@ install_s-ui(){
         last_version=$1
         url="https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz"
         echo -e "${Info} 开始安装 S-UI v${last_version}${Plain}"
-        wget -N --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz ${url}
+        wget --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz ${url}
         if [[ $? -ne 0 ]]; then
             echo -e "${Error} 下载 s-ui v${last_version} 失败，请确认该版本是否存在。${Plain}"
             exit 1
@@ -278,7 +278,7 @@ install_s-ui(){
     rm s-ui-linux-${arch}.tar.gz -f
 
     echo -e "${Info} 正在下载管理脚本...${Plain}"
-    wget -O /usr/bin/s-ui -N --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
+    wget -O /usr/bin/s-ui --no-check-certificate https://raw.githubusercontent.com/elesssss/Script/main/script/s-ui.sh
     chmod +x /usr/bin/s-ui
     
     cp -rf s-ui /usr/local/
