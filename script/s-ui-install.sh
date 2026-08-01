@@ -210,10 +210,9 @@ config_after_install(){
         local config_path=app
         local config_subPort=2094
         local config_subPath=sub
-
+            
         read -rp "$(echo -e "${Tip} 是否自定义面板设置？(y/N, 默认N): ")" set_config
         if [[ "${set_config}" == "y" || "${set_config}" == "Y" ]]; then
-
             # 设置端口
             read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
             if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
@@ -232,10 +231,10 @@ config_after_install(){
             fi
 
             # 设置用户名
-            read -rp "$(echo -e "${Tip} 请设置您的用户名 (留空将自动生成): ")" config_user
-            if [[ -z "${config_user}" ]]; then
-                config_user=$(gen_random_string 7)
-                echo -e "${Info} 您的用户名将设定为: ${Green}${config_user}${Plain}"
+            read -rp "$(echo -e "${Tip} 请设置您的用户名 (留空将自动生成): ")" config_username
+            if [[ -z "${config_username}" ]]; then
+                config_username=$(gen_random_string 7)
+                echo -e "${Info} 您的用户名将设定为: ${Green}${config_username}${Plain}"
             fi
         
             # 设置密码
@@ -246,12 +245,12 @@ config_after_install(){
             fi
         else
             config_port=$(shuf -i 10000-65535 -n 1)
-            local config_user=admin
+            local config_username=admin
             local config_password=admin
         fi
         
         echo -e "${Info} 正在应用面板配置..."
-        /usr/local/s-ui/sui admin -username ${config_user} -password ${config_password} &>/dev/null
+        /usr/local/s-ui/sui admin -username ${config_username} -password ${config_password} &>/dev/null
         /usr/local/s-ui/sui setting -port ${config_port} -path ${config_path} -subPort ${config_subPort} -subPath ${config_subPath} &>/dev/null
 
         # Display final credentials and access information
@@ -259,7 +258,7 @@ config_after_install(){
         echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
         echo -e "${Green}                    面板安装完成！                      ${Plain}"
         echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
-        echo -e "${Green}用户名:     ${Plain}${config_user}"
+        echo -e "${Green}用户名:     ${Plain}${config_username}"
         echo -e "${Green}密码:       ${Plain}${config_password}"
         echo -e "${Green}端口:       ${Plain}${config_port}"
         echo -e "${Green}Web根路径:  ${Plain}${config_path}"
@@ -269,19 +268,21 @@ config_after_install(){
         echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
         echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}s-ui${Plain} 命令。${Plain}"
     else
-        local existing_hasDefaultCredential=$(/usr/local/s-ui/sui setting -show true | grep -Eo 'hasDefaultCredential: .+' | awk '{print $2}')
-        local existing_webBasePath=$(/usr/local/s-ui/sui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
-        local existing_port=$(/usr/local/s-ui/sui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
-        
-        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
-            echo -e "${Green}###############################################${Plain}"
-            echo -e "${Green}用户名: ${Plain}admin"
-            echo -e "${Green}密码:   ${Plain}admin"
-            echo -e "${Green}###############################################${Plain}"
-        else
-            echo -e "${Success} 用户名、密码和 WebBasePath 已正确设置。${Plain}"
-        fi
-        echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${existing_webBasePath}${Plain}"
+        local config_username=$(/usr/local/s-ui/sui admin -show | grep "Username:" | awk '{print $NF}')
+        local config_port=$(/usr/local/s-ui/sui setting -show | grep "Panel port:" | awk '{print $NF}')
+        local config_path=$(/usr/local/s-ui/sui setting -show | grep "Panel path:" | awk '{print $NF}' | sed -e 's/^\///' -e 's/\/$//')
+        echo ""
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}                    面板升级完成！                      ${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}用户名:     ${Plain}${config_username}"
+        echo -e "${Green}端口:       ${Plain}${config_port}"
+        echo -e "${Green}Web根路径:  ${Plain}${config_path}"
+        echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_path}${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+        echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+        echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}s-ui${Plain} 命令。${Plain}"
     fi
 }
 
@@ -350,9 +351,6 @@ install_s-ui(){
     systemctl enable s-ui --now
     echo -e ""
     echo -e "${Green}s-ui ${last_version}${Plain} 安装完成，现在已经正常运行了..."
-    echo -e "${Info} 您可以通过以下 URL 访问面板:"${Green}
-    /usr/local/s-ui/sui uri
-    echo -e "${Plain}"
     echo
     s-ui help
 }
