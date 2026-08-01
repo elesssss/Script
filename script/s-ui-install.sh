@@ -117,42 +117,43 @@ check_pmc(){
     if [[ "$release" == "debian" || "$release" == "ubuntu" || "$release" == "kali" || "$release" == "armbian" ]]; then
         updates="apt update -y"
         installs="apt install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "alpine" ]]; then
         updates="apk update"
         installs="apk add --no-cache"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "almalinux" || "$release" == "rocky" || "$release" == "oracle" || "$release" == "centos" ]]; then
         updates="yum update -y"
         installs="yum install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "fedora" || "$release" == "amzn" ]]; then
         updates="dnf update -y"
         installs="dnf install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "arch" || "$release" == "manjaro" || "$release" == "parch" ]]; then
         updates="pacman -Sy"
         installs="pacman -S --noconfirm"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     elif [[ "$release" == "opensuse" || "$release" == "opensuse-leap" || "$release" == "opensuse-tumbleweed" ]]; then
         updates="zypper refresh"
         installs="zypper install -y"
-        ("wget" "curl" "tar")
+        apps=("wget" "curl" "tar" "openssl" )
     fi
 }
 
 install_base(){
     check_pmc
-    cmds=("wget" "curl" "tar")
-    
+    DEPS=()  # 重要：初始化数组
+    cmds=("wget" "curl" "tar" "openssl" )
+
     for i in "${!cmds[@]}"; do
-        if ! which "${cmds[i]}" &>/dev/null; then
+        if ! command -v "${cmds[i]}" &>/dev/null; then
             DEPS+=("${apps[i]}")
         fi
     done
     
     if [ ${#DEPS[@]} -gt 0 ]; then
-        echo -e "${Info} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
+        echo -e "${Tip} 安装依赖列表：${Green}${DEPS[*]}${Plain} 请稍后..."
         $updates 
         $installs "${DEPS[@]}" 
         echo -e "${Success} 依赖安装完成！${Plain}"
@@ -161,70 +162,126 @@ install_base(){
     fi
 }
 
+gen_random_string(){
+    local length="$1"
+    openssl rand -base64 $((length * 2)) \
+        | tr -dc 'a-zA-Z0-9' \
+        | head -c "$length"
+}
+
 config_after_install(){
-    /usr/local/s-ui/sui migrate &>/dev/null
+    echo -e "${Info} 正在配置面板设置..."
+
+    local URL_lists=(
+        "https://api4.ipify.org"
+        "https://ipv4.icanhazip.com"
+        "https://v4.api.ipinfo.io/ip"
+        "https://ipv4.myexternalip.com/raw"
+        "https://4.ident.me"
+        "https://check-host.net/ip"
+    )
+    local server_ip=""
     
-    echo -e "${Warning} 安装/更新完成！出于安全考虑，建议修改面板设置。${Plain}"
-    read -p "$(echo -e "${Tip} 您是否要继续进行修改 [y/n]？ ")" config_confirm
-    if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
-        echo -e "${Tip} 请输入${Yellow}面板端口${Plain} (默认值则留空）:"
-        read config_port
-        echo -e "${Tip} 请输入${Yellow}面板路径${Plain} (默认值则留空):"
-        read config_path
-
-        # Sub configuration
-        echo -e "${Tip} 请输入${Yellow}订阅端口${Plain} (默认值则留空):"
-        read config_subPort
-        echo -e "${Tip} 请输入${Yellow}订阅路径${Plain} (默认值则留空):" 
-        read config_subPath
-
-        # Set configs
-        echo -e "${Info} 正在初始化，请稍候...${Plain}"
-        params=""
-        [ -z "$config_port" ] || params="$params -port $config_port"
-        [ -z "$config_path" ] || params="$params -path $config_path"
-        [ -z "$config_subPort" ] || params="$params -subPort $config_subPort"
-        [ -z "$config_subPath" ] || params="$params -subPath $config_subPath"
-        /usr/local/s-ui/sui setting ${params}
-
-        read -p "$(echo -e "${Tip} 您是否要更改管理员凭据 [y/n]? ")" admin_confirm
-        if [[ "${admin_confirm}" == "y" || "${admin_confirm}" == "Y" ]]; then
-            # First admin credentials
-            read -p "$(echo -e "${Tip} 请设置您的用户名: ")" config_account
-            read -p "$(echo -e "${Tip} 请设置您的密码: ")" config_password
-
-            /usr/local/s-ui/sui admin -username ${config_account} -password ${config_password}
-        else
-            echo -e "${Info} 您当前的管理员凭据: ${Plain}"
-            /usr/local/s-ui/sui admin -show 
+    echo -e "${Info} 正在获取服务器公网 IP..."
+    for ip_address in "${URL_lists[@]}"; do
+        local response=$(curl -s -w "\n%{http_code}" --max-time 3 "${ip_address}" 2> /dev/null)
+        local http_code=$(echo "$response" | tail -n1)
+        local ip_result=$(echo "$response" | head -n-1 | tr -d '[:space:]"')
+        if [[ "${http_code}" == "200" && "${ip_result}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            server_ip="${ip_result}"
+            echo -e "${Success} 检测到服务器 IP: ${Green}${server_ip}${Plain}"
+            break
         fi
+    done
+
+    if [[ -z "$server_ip" ]]; then
+        echo -e "${Warning} 无法从任何服务商自动检测到服务器 IP。${Plain}"
+        while [[ -z "$server_ip" ]]; do
+            read -rp "$(echo -e "${Tip} 请输入服务器的公网 IPv4 地址: ")" server_ip
+            server_ip="${server_ip// /}"
+            if [[ ! "$server_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo -e "${Error} 无效的 IPv4 地址，请重新输入。${Plain}"
+                server_ip=""
+            fi
+        done
+    fi
+
+    if [ ! -f "/usr/local/s-ui/db/s-ui.db" ]; then
+        local config_path=app
+        local config_subPort=2094
+        local config_subPath=sub
+
+        read -rp "$(echo -e "${Tip} 是否自定义面板设置？(y/N, 默认N): ")" set_config
+        if [[ "${set_config}" == "y" || "${set_config}" == "Y" ]]; then
+
+            # 设置端口
+            read -rp "$(echo -e "${Tip} 是否自定义面板端口？(y/n, 默认随机端口): ")" config_confirm
+            if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
+                while true; do
+                    read -rp "$(echo -e "${Tip} 请输入面板端口 (10000-65535): ")" config_port
+                    if [[ "$config_port" =~ ^[0-9]+$ ]] && [ "$config_port" -ge 10000 ] && [ "$config_port" -le 65535 ]; then
+                        echo -e "${Info} 面板端口: ${Green}${config_port}${Plain}"
+                        break
+                    else
+                        echo -e "${Error} 无效输入，请输入 10000-65535 之间的数字。${Plain}"
+                    fi
+                done
+            else
+                config_port=$(shuf -i 10000-65535 -n 1)
+                echo -e "${Info} 已生成随机端口: ${Green}${config_port}${Plain}"
+            fi
+
+            # 设置用户名
+            read -rp "$(echo -e "${Tip} 请设置您的用户名 (留空将自动生成): ")" config_user
+            if [[ -z "${config_user}" ]]; then
+                config_user=$(gen_random_string 7)
+                echo -e "${Info} 您的用户名将设定为: ${Green}${config_user}${Plain}"
+            fi
+        
+            # 设置密码
+            read -rp "$(echo -e "${Tip} 请设置您的用户密码 (留空将自动生成): ")" config_password
+            if [[ -z "${config_password}" ]]; then
+                config_password=$(gen_random_string 9)
+                echo -e "${Info} 您的用户密码将设定为: ${Green}${config_password}${Plain}"
+            fi
+        else
+            config_port=$(shuf -i 10000-65535 -n 1)
+            local config_user=admin
+            local config_password=admin
+        fi
+        
+        echo -e "${Info} 正在应用面板配置..."
+        /usr/local/s-ui/sui admin -username ${config_user} -password ${config_password} &>/dev/null
+        /usr/local/s-ui/sui setting -port ${config_port} -path ${config_path} -subPort ${config_subPort} -subPath ${config_subPath} &>/dev/null
+
+        # Display final credentials and access information
+        echo ""
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}                    面板安装完成！                      ${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Green}用户名:     ${Plain}${config_user}"
+        echo -e "${Green}密码:       ${Plain}${config_password}"
+        echo -e "${Green}端口:       ${Plain}${config_port}"
+        echo -e "${Green}Web根路径:  ${Plain}${config_path}"
+        echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_path}${Plain}"
+        echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+        echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+        echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+        echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}s-ui${Plain} 命令。${Plain}"
     else
-        echo -e "${Warning} 已取消配置修改。${Plain}"
-        if [[ ! -f "/usr/local/s-ui/db/s-ui.db" ]]; then
-            local usernameTemp=admin
-            local passwordTemp=admin
-            local portTemp=$(shuf -i10000-65000 -n1)
-            local pathTemp=app
-            local subPortTemp=2094
-            local subPathTemp=sub
-            
-            echo -e "${Info} 检测到全新安装，使用默认登录信息:"
+        local existing_hasDefaultCredential=$(/usr/local/s-ui/sui setting -show true | grep -Eo 'hasDefaultCredential: .+' | awk '{print $2}')
+        local existing_webBasePath=$(/usr/local/s-ui/sui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
+        local existing_port=$(/usr/local/s-ui/sui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
+        
+        if [[ "$existing_hasDefaultCredential" == "true" ]]; then
             echo -e "${Green}###############################################${Plain}"
-            echo -e "${Green}用户名: ${usernameTemp}${Plain}"
-            echo -e "${Green}密码: ${passwordTemp}${Plain}"
-            echo -e "${Green}面板端口: ${portTemp}${Plain}"
-            echo -e "${Green}面板路径: ${pathTemp}${Plain}"
-            echo -e "${Green}订阅端口: ${subPortTemp}${Plain}"
-            echo -e "${Green}订阅路径: ${subPathTemp}${Plain}"
+            echo -e "${Green}用户名: ${Plain}admin"
+            echo -e "${Green}密码:   ${Plain}admin"
             echo -e "${Green}###############################################${Plain}"
-            echo -e "${Warning} 如果您忘记了登录信息，您可以输入 ${Green}s-ui${Plain} 进入配置菜单"
-            
-            /usr/local/s-ui/sui admin -username ${usernameTemp} -password ${passwordTemp} &>/dev/null
-            /usr/local/s-ui/sui setting -port ${portTemp} -path ${pathTemp} -subPort ${subPortTemp} -subPath ${subPathTemp} &>/dev/null
         else
-            echo -e "${Info} 检测到升级安装，将保留原有设置。${Plain}"
-            echo -e "${Warning} 如果您忘记了登录信息，您可以输入 ${Green}s-ui${Plain} 进入配置菜单"
+            echo -e "${Success} 用户名、密码和 WebBasePath 已正确设置。${Plain}"
         fi
+        echo -e "${Info} 访问地址: ${Yellow}http://${server_ip}:${existing_port}/${existing_webBasePath}${Plain}"
     fi
 }
 
@@ -264,10 +321,10 @@ install_s-ui(){
     else
         last_version=$1
         url="https://github.com/alireza0/s-ui/releases/download/${last_version}/s-ui-linux-${arch}.tar.gz"
-        echo -e "${Info} 开始安装 S-UI v${last_version}${Plain}"
+        echo -e "${Info} 开始安装 S-UI ${last_version}${Plain}"
         wget --no-check-certificate -O /tmp/s-ui-linux-${arch}.tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${Error} 下载 s-ui v${last_version} 失败，请确认该版本是否存在。${Plain}"
+            echo -e "${Error} 下载 s-ui ${last_version} 失败，请确认该版本是否存在。${Plain}"
             exit 1
         fi
     fi
@@ -296,7 +353,7 @@ install_s-ui(){
     echo -e "${Info} 您可以通过以下 URL 访问面板:"${Green}
     /usr/local/s-ui/sui uri
     echo -e "${Plain}"
-    echo -e ""
+    echo
     s-ui help
 }
 
