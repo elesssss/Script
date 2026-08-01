@@ -481,7 +481,7 @@ Uninstall(){
     echo && echo -e "${Success}shadowsocks 卸载完成！" && exit
 }
 
-get_country_emoji() {
+get_country_emoji(){
     ip=$1
     country_code=$(curl -s https://ipinfo.io/ | grep country | cut -d '"' -f 4)
 
