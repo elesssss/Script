@@ -349,7 +349,7 @@ install_s-ui(){
     config_after_install
     prepare_services
     systemctl enable s-ui --now
-    echo -e ""
+    echo
     echo -e "${Green}s-ui ${last_version}${Plain} 安装完成，现在已经正常运行了..."
     echo
     s-ui help
