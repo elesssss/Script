@@ -222,7 +222,7 @@ config_after_install(){
         echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
         echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
         echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
-        echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}s-ui${Plain} 命令。${Plain}"
+        echo -e "${Warning} ⚠ 如需修改配置，请运行 ${Green}x-ui${Plain} 命令。${Plain}"
     fi
 
     # 确保面板监听所有接口
