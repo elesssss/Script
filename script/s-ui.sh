@@ -131,7 +131,7 @@ uninstall(){
     systemctl reset-failed
     
     echo -e "${Info} 正在清理文件...${Plain}"
-    rm -rf /etc/s-ui/ /usr/local/s-ui /usr/local/s-ui/
+    rm -rf /etc/s-ui/ /usr/local/s-ui /usr/bin/s-ui
     
     echo ""
     echo -e "${Success} 已成功卸载.${Plain}"
