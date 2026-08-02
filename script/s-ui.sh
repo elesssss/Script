@@ -200,7 +200,7 @@ set_admin(){
     get_public_ip
     local config_port=$(/usr/local/s-ui/sui setting -show | grep "Panel port:" | awk '{print $NF}')
     local config_path=$(/usr/local/s-ui/sui setting -show | grep "Panel path:" | awk '{print $NF}' | sed -e 's/^\///' -e 's/\/$//')
-    /usr/local/s-ui/sui admin -username ${config_account} -password ${config_password} &>/dev/null
+    /usr/local/s-ui/sui admin -username ${config_username} -password ${config_password} &>/dev/null
     echo -e "${Success} 管理员凭据已更新！${Plain}"
     echo
     echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
