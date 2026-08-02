@@ -33,6 +33,42 @@ else
     exit 1
 fi
 
+gen_random_string(){
+    local length="$1"
+    openssl rand -base64 $((length * 2)) \
+        | tr -dc 'a-zA-Z0-9' \
+        | head -c "$length"
+}
+
+get_public_ip(){
+    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|enp)'))
+    IP_API=(
+        "http://ip.gs"
+        "http://ip.sb"
+        "http://ident.me"
+        "http://ifconfig.me"
+        "http://api.ipify.org"
+        "http://icanhazip.com"
+    )
+
+    for iface in "${InFaces[@]}"; do
+        for ip_api in "${IP_API[@]}"; do
+            IPv4=$(curl -s4 --max-time 2 --interface "$iface" "$ip_api")
+            IPv6=$(curl -s6 --max-time 2 --interface "$iface" "$ip_api")
+
+            if [[ -n ${IPv4} || -n ${IPv6} ]]; then # 检查是否获取到IP地址
+                break 2 # 获取到任一IP类型停止循环
+            fi
+        done
+    done
+    
+    if [[ -n ${IPv4} ]]; then
+        server_ip=${IPv4}
+    else
+        server_ip=${IPv6}
+    fi
+}
+
 confirm(){
     if [[ $# > 1 ]]; then
         echo && read -p "$1 [默认$2]: " temp
@@ -142,22 +178,39 @@ uninstall(){
     fi
 }
 
-reset_admin(){
-    echo -e "${Warning} 不建议将管理员的凭据设置为默认值!${Plain}"
-    confirm "您确定要将管理员的凭据重置为默认值吗?" "n"
-    if [[ $? == 0 ]]; then
-        /usr/local/s-ui/sui admin -reset
-        echo -e "${Success} 管理员凭据已重置为默认值${Plain}"
-    fi
-    before_show_menu
-}
-
 set_admin(){
-    echo -e "${Tip} 请设置管理员凭据${Plain}"
-    read -p "$(echo -e "${Tip} 请设置您的用户名: ${Plain}")" config_account
-    read -p "$(echo -e "${Tip} 请设置您的密码: ${Plain}")" config_password
-    /usr/local/s-ui/sui admin -username ${config_account} -password ${config_password}
+    read -rp "$(echo -e "${Tip} 是否设置新的用户名密码？(y/N, 留空使用默认用户名密码): ")" set_config_username
+    if [[ "${set_config_username}" == "y" || "${set_config_username}" == "Y" ]]; then
+        # 设置用户名
+        read -rp "$(echo -e "${Tip} 请设置您的用户名 (留空将自动生成): ")" config_username
+        if [[ -z "${config_username}" ]]; then
+            config_username=$(gen_random_string 7)
+            echo -e "${Info} 您的用户名将设定为: ${Green}${config_username}${Plain}"
+        fi
+        # 设置密码
+        read -rp "$(echo -e "${Tip} 请设置您的用户密码 (留空将自动生成): ")" config_password
+        if [[ -z "${config_password}" ]]; then
+            config_password=$(gen_random_string 9)
+            echo -e "${Info} 您的用户密码将设定为: ${Green}${config_password}${Plain}"
+        fi
+    else
+        local config_username=admin
+        local config_password=admin
+    fi
+    get_public_ip
+    local config_port=$(/usr/local/s-ui/sui setting -show | grep "Panel port:" | awk '{print $NF}')
+    local config_path=$(/usr/local/s-ui/sui setting -show | grep "Panel path:" | awk '{print $NF}' | sed -e 's/^\///' -e 's/\/$//')
+    /usr/local/s-ui/sui admin -username ${config_account} -password ${config_password} &>/dev/null
     echo -e "${Success} 管理员凭据已更新！${Plain}"
+    echo
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    echo -e "${Green}用户名:     ${Plain}${config_username}"
+    echo -e "${Green}密码:       ${Plain}${config_password}"
+    echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_path}${Plain}"
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+    echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+    echo
     before_show_menu
 }
 
@@ -828,28 +881,27 @@ show_menu(){
   ${Green}3.${Plain} 设定版本
   ${Green}4.${Plain} 卸载
 ————————————————————————————————
-  ${Green}5.${Plain} 将管理员凭据重置为默认值
-  ${Green}6.${Plain} 设置管理员凭据
-  ${Green}7.${Plain} 查看管理员凭据
+  ${Green}5.${Plain} 修改用户名密码
+  ${Green}6.${Plain} 查看管理员凭据
 ————————————————————————————————
-  ${Green}8.${Plain}  重置面板设置
-  ${Green}9.${Plain}  面板设置
-  ${Green}10.${Plain} 查看面板设置
+  ${Green}7.${Plain} 重置面板设置
+  ${Green}8.${Plain} 面板设置
+  ${Green}9.${Plain} 查看面板设置
 ————————————————————————————————
-  ${Green}11.${Plain} S-UI 启动
-  ${Green}12.${Plain} S-UI 停止
-  ${Green}13.${Plain} S-UI 重启
-  ${Green}14.${Plain} S-UI 查看状态
-  ${Green}15.${Plain} S-UI 查看日志
-  ${Green}16.${Plain} S-UI 开启开机自启
-  ${Green}17.${Plain} S-UI 关闭开机自启
+ ${Green}10.${Plain} S-UI 启动
+ ${Green}11.${Plain} S-UI 停止
+ ${Green}12.${Plain} S-UI 重启
+ ${Green}13.${Plain} S-UI 查看状态
+ ${Green}14.${Plain} S-UI 查看日志
+ ${Green}15.${Plain} S-UI 开启开机自启
+ ${Green}16.${Plain} S-UI 关闭开机自启
 ————————————————————————————————
-  ${Green}18.${Plain} 启用或禁用BBR
-  ${Green}19.${Plain} SSL 证书管理
-  ${Green}20.${Plain} Cloudflare SSL 证书
+ ${Green}17.${Plain} 启用或禁用BBR
+ ${Green}18.${Plain} SSL 证书管理
+ ${Green}19.${Plain} Cloudflare SSL 证书
 ————————————————————————————————"
     show_status s-ui
-    echo && read -p "请输入您的选择 [0-20]: " num
+    echo && read -p "请输入您的选择 [0-19]: " num
 
     case "${num}" in
     0)
@@ -868,55 +920,52 @@ show_menu(){
         check_install && uninstall
         ;;
     5)
-        check_install && reset_admin
-        ;;
-    6)
         check_install && set_admin
         ;;
-    7)
+    6)
         check_install && view_admin
         ;;
-    8)
+    7)
         check_install && reset_setting
         ;;
-    9)
+    8)
         check_install && set_setting
         ;;
-    10)
+    9)
         check_install && view_setting
         ;;
-    11)
+    10)
         check_install && start s-ui
         ;;
-    12)
+    11)
         check_install && stop s-ui
         ;;
-    13)
+    12)
         check_install && restart s-ui
         ;;
-    14)
+    13)
         check_install && status s-ui
         ;;
-    15)
+    14)
         check_install && show_log s-ui
         ;;
-    16)
+    15)
         check_install && enable s-ui
         ;;
-    17)
+    16)
         check_install && disable s-ui
         ;;
-    18)
+    17)
         bbr_menu
         ;;
-    19)
+    18)
         ssl_cert_issue_main
         ;;
-    20)
+    19)
         ssl_cert_issue_CF
         ;;
     *)
-        echo -e "${Error} 请输入正确的数字 [0-20]${Plain}"
+        echo -e "${Error} 请输入正确的数字 [0-19]${Plain}"
         ;;
     esac
 }
