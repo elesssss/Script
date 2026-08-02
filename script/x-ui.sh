@@ -905,7 +905,8 @@ show_menu(){
 ————————————————
  ${Green}15.${Plain} 一键安装 bbr (最新内核)
  ${Green}16.${Plain} 一键申请SSL证书(acme申请)
- ${Green}17.${Plain} 配置x-ui定时任务"
+ ${Green}17.${Plain} 配置x-ui定时任务
+ ————————————————"
     show_status
     echo && read -p "请输入选择 [0-17]: " num
 
