@@ -74,6 +74,42 @@ elif [[ x"${release}" == x"debian" ]]; then
     fi
 fi
 
+gen_random_string(){
+    local length="$1"
+    openssl rand -base64 $((length * 2)) \
+        | tr -dc 'a-zA-Z0-9' \
+        | head -c "$length"
+}
+
+get_public_ip(){
+    InFaces=($(ls /sys/class/net | grep -E '^(eth|ens|enp)'))
+    IP_API=(
+        "http://ip.gs"
+        "http://ip.sb"
+        "http://ident.me"
+        "http://ifconfig.me"
+        "http://api.ipify.org"
+        "http://icanhazip.com"
+    )
+
+    for iface in "${InFaces[@]}"; do
+        for ip_api in "${IP_API[@]}"; do
+            IPv4=$(curl -s4 --max-time 2 --interface "$iface" "$ip_api")
+            IPv6=$(curl -s6 --max-time 2 --interface "$iface" "$ip_api")
+
+            if [[ -n ${IPv4} || -n ${IPv6} ]]; then # 检查是否获取到IP地址
+                break 2 # 获取到任一IP类型停止循环
+            fi
+        done
+    done
+    
+    if [[ -n ${IPv4} ]]; then
+        server_ip=${IPv4}
+    else
+        server_ip=${IPv6}
+    fi
+}
+
 confirm(){
     if [[ $# > 1 ]]; then
         echo && read -p "$1 [默认$2]: " temp
@@ -166,16 +202,39 @@ uninstall(){
     exit
 }
 
-reset_user(){
-    confirm "确定要将用户名和密码重置为 admin 吗" "n"
-    if [[ $? != 0 ]]; then
-        if [[ $# == 0 ]]; then
-            show_menu
+set_user(){
+    read -rp "$(echo -e "${Tip} 是否设置新的用户名密码？(y/N, 留空使用默认用户名密码): ")" set_config_username
+    if [[ "${set_config_username}" == "y" || "${set_config_username}" == "Y" ]]; then
+        # 设置用户名
+        read -rp "$(echo -e "${Tip} 请设置您的用户名 (留空将自动生成): ")" config_username
+        if [[ -z "${config_username}" ]]; then
+            config_username=$(gen_random_string 7)
+            echo -e "${Info} 您的用户名将设定为: ${Green}${config_username}${Plain}"
         fi
-        return 0
+        # 设置密码
+        read -rp "$(echo -e "${Tip} 请设置您的用户密码 (留空将自动生成): ")" config_password
+        if [[ -z "${config_password}" ]]; then
+            config_password=$(gen_random_string 9)
+            echo -e "${Info} 您的用户密码将设定为: ${Green}${config_password}${Plain}"
+        fi
+    else
+        local config_username=admin
+        local config_password=admin
     fi
-    /usr/local/x-ui/x-ui setting -username admin -password admin
-    echo -e "${Success} 用户名和密码已重置为 ${Green}admin${Plain}"
+    get_public_ip
+    local config_port=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $NF}')
+    local config_webBasePath=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $NF}' | sed -e 's/^\///' -e 's/\/$//')
+    /usr/local/x-ui/x-ui setting -username ${config_username} -password ${config_password} &>/dev/null
+    echo -e "${Success} 管理员凭据已更新！${Plain}"
+    echo
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    echo -e "${Green}用户名:     ${Plain}${config_username}"
+    echo -e "${Green}密码:       ${Plain}${config_password}"
+    echo -e "${Green}访问地址:   ${Plain}${Yellow}http://${server_ip}:${config_port}/${config_webBasePath}${Plain}"
+    echo -e "${Green}═══════════════════════════════════════════════════════${Plain}"
+    echo -e "${Warning} ⚠ 重要：请妥善保存这些凭据！${Plain}"
+    echo -e "${Warning} ⚠ 面板使用纯 HTTP 协议，请确保在受信任的网络环境中使用。${Plain}"
+    echo
     echo -e "${Tip} 现在请重启面板${Plain}"
     confirm_restart
 }
@@ -830,23 +889,23 @@ show_menu(){
   ${Green}2.${Plain} 更新 x-ui
   ${Green}3.${Plain} 卸载 x-ui
 ————————————————
-  ${Green}4.${Plain} 重置用户名密码
+  ${Green}4.${Plain} 修改用户名密码
   ${Green}5.${Plain} 重置面板设置
   ${Green}6.${Plain} 设置面板端口
   ${Green}7.${Plain} 查看当前面板信息
 ————————————————
   ${Green}8.${Plain} 启动 x-ui
   ${Green}9.${Plain} 停止 x-ui
-  ${Green}10.${Plain} 重启 x-ui
-  ${Green}11.${Plain} 查看 x-ui 状态
-  ${Green}12.${Plain} 查看 x-ui 日志
+ ${Green}10.${Plain} 重启 x-ui
+ ${Green}11.${Plain} 查看 x-ui 状态
+ ${Green}12.${Plain} 查看 x-ui 日志
 ————————————————
-  ${Green}13.${Plain} 设置 x-ui 开机自启
-  ${Green}14.${Plain} 取消 x-ui 开机自启
+ ${Green}13.${Plain} 设置 x-ui 开机自启
+ ${Green}14.${Plain} 取消 x-ui 开机自启
 ————————————————
-  ${Green}15.${Plain} 一键安装 bbr (最新内核)
-  ${Green}16.${Plain} 一键申请SSL证书(acme申请)
-  ${Green}17.${Plain} 配置x-ui定时任务"
+ ${Green}15.${Plain} 一键安装 bbr (最新内核)
+ ${Green}16.${Plain} 一键申请SSL证书(acme申请)
+ ${Green}17.${Plain} 配置x-ui定时任务"
     show_status
     echo && read -p "请输入选择 [0-17]: " num
 
@@ -865,7 +924,7 @@ show_menu(){
         check_install && uninstall
         ;;
     4)
-        check_install && reset_user
+        check_install && set_user
         ;;
     5)
         check_install && reset_config
